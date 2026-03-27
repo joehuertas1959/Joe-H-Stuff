@@ -1,0 +1,107 @@
+/* Massachusetts Mayflower Design System - MIRCS Prototype */
+:root {
+  --ma-blue: #14558f;
+  --ma-blue-dark: #0d3f6b;
+  --ma-blue-light: #e8f0f9;
+  --ma-green: #388557;
+  --ma-green-light: #edf7f1;
+  --ma-red: #cd0000;
+  --ma-red-light: #fff0f0;
+  --ma-yellow: #ffc107;
+  --ma-yellow-light: #fff8e1;
+  --ma-gray-100: #f2f2f2;
+  --ma-gray-200: #e0e0e0;
+  --ma-gray-400: #9e9e9e;
+  --ma-gray-600: #616161;
+  --ma-gray-800: #212121;
+  --ma-white: #ffffff;
+  --ma-border: #d0d0d0;
+  --font-sans: 'Helvetica Neue', Arial, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); font-size: 16px; color: var(--ma-gray-800); background-color: var(--ma-gray-100); line-height: 1.5; }
+a { color: var(--ma-blue); text-decoration: underline; cursor: pointer; }
+a:hover { color: var(--ma-blue-dark); }
+h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; }
+h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.75rem; }
+h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+h4 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }
+.required-mark { color: var(--ma-red); margin-left: 2px; }
+.page-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+.main-content { padding: 2rem 0; min-height: calc(100vh - 120px); }
+.card { background: var(--ma-white); border: 1px solid var(--ma-border); border-radius: 4px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.card-title { font-size: 1.25rem; font-weight: 700; color: var(--ma-blue-dark); border-bottom: 2px solid var(--ma-blue); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+.form-group { margin-bottom: 1.25rem; }
+.form-label { display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem; color: var(--ma-gray-800); }
+.form-control { display: block; width: 100%; padding: 0.5rem 0.75rem; font-size: 1rem; font-family: var(--font-sans); border: 1px solid var(--ma-gray-400); border-radius: 4px; background-color: var(--ma-white); color: var(--ma-gray-800); transition: border-color 0.15s ease; }
+.form-control:focus { outline: none; border-color: var(--ma-blue); box-shadow: 0 0 0 3px rgba(20,85,143,0.2); }
+.form-control:disabled, .form-control[readonly] { background-color: var(--ma-gray-100); color: var(--ma-gray-600); cursor: not-allowed; }
+.form-control.error { border-color: var(--ma-red); }
+.form-hint { font-size: 0.8rem; color: var(--ma-gray-600); margin-top: 0.25rem; }
+.form-error { font-size: 0.8rem; color: var(--ma-red); margin-top: 0.25rem; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+.form-check { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem; padding-top: 0.2rem; }
+.form-check input[type="checkbox"], .form-check input[type="radio"] { width: 18px; height: 18px; margin-top: 2px; cursor: pointer; accent-color: var(--ma-blue); flex-shrink: 0; }
+.form-check-label { font-size: 0.95rem; cursor: pointer; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.6rem 1.5rem; font-size: 1rem; font-family: var(--font-sans); font-weight: 600; border: 2px solid transparent; border-radius: 4px; cursor: pointer; text-decoration: none; transition: background-color 0.15s, border-color 0.15s, color 0.15s; white-space: nowrap; }
+.btn-primary { background-color: var(--ma-blue); border-color: var(--ma-blue); color: var(--ma-white); }
+.btn-primary:hover { background-color: var(--ma-blue-dark); border-color: var(--ma-blue-dark); }
+.btn-secondary { background-color: var(--ma-white); border-color: var(--ma-blue); color: var(--ma-blue); }
+.btn-secondary:hover { background-color: var(--ma-blue-light); }
+.btn-success { background-color: var(--ma-green); border-color: var(--ma-green); color: var(--ma-white); }
+.btn-danger { background-color: var(--ma-red); border-color: var(--ma-red); color: var(--ma-white); }
+.btn-sm { padding: 0.35rem 0.9rem; font-size: 0.875rem; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-group { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.5rem; }
+.alert { padding: 0.85rem 1rem; border-radius: 4px; border-left: 4px solid; margin-bottom: 1rem; font-size: 0.95rem; }
+.alert-info { background-color: var(--ma-blue-light); border-color: var(--ma-blue); color: var(--ma-blue-dark); }
+.alert-success { background-color: var(--ma-green-light); border-color: var(--ma-green); color: #1e4d35; }
+.alert-warning { background-color: var(--ma-yellow-light); border-color: var(--ma-yellow); color: #5a4000; }
+.alert-danger { background-color: var(--ma-red-light); border-color: var(--ma-red); color: var(--ma-red); }
+.badge { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 700; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
+.badge-active { background-color: var(--ma-green-light); color: var(--ma-green); border: 1px solid var(--ma-green); }
+.badge-expired { background-color: var(--ma-yellow-light); color: #7a5a00; border: 1px solid var(--ma-yellow); }
+.badge-suspended { background-color: var(--ma-red-light); color: var(--ma-red); border: 1px solid var(--ma-red); }
+.badge-revoked { background-color: #fce4e4; color: #8b0000; border: 1px solid var(--ma-red); }
+.badge-pending { background-color: #e8e8e8; color: var(--ma-gray-600); border: 1px solid var(--ma-gray-400); }
+.table-container { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th { background-color: var(--ma-blue); color: var(--ma-white); padding: 0.6rem 0.8rem; text-align: left; font-weight: 600; }
+td { padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--ma-gray-200); }
+tr:nth-child(even) td { background-color: var(--ma-gray-100); }
+tr:hover td { background-color: var(--ma-blue-light); }
+.steps { display: flex; gap: 0; margin-bottom: 2rem; border-bottom: 2px solid var(--ma-gray-200); overflow-x: auto; }
+.step { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; font-size: 0.875rem; font-weight: 600; color: var(--ma-gray-400); border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; }
+.step.active { color: var(--ma-blue); border-bottom-color: var(--ma-blue); }
+.step.completed { color: var(--ma-green); border-bottom-color: var(--ma-green); }
+.step-number { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; background-color: var(--ma-gray-200); color: var(--ma-gray-600); }
+.step.active .step-number { background-color: var(--ma-blue); color: var(--ma-white); }
+.step.completed .step-number { background-color: var(--ma-green); color: var(--ma-white); }
+.section-divider { border: none; border-top: 1px solid var(--ma-gray-200); margin: 1.5rem 0; }
+.license-valid { display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem; font-weight: 700; padding: 0.75rem; border-radius: 4px; }
+.license-valid.valid { background-color: var(--ma-green-light); color: var(--ma-green); }
+.license-valid.invalid { background-color: var(--ma-red-light); color: var(--ma-red); }
+.app-card { background: var(--ma-white); border: 1px solid var(--ma-border); border-radius: 6px; padding: 1.75rem; text-decoration: none; color: inherit; display: block; transition: box-shadow 0.15s, border-color 0.15s; }
+.app-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); border-color: var(--ma-blue); text-decoration: none; color: inherit; }
+.app-card-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.app-card-title { font-size: 1.1rem; font-weight: 700; color: var(--ma-blue-dark); margin-bottom: 0.4rem; }
+.app-card-desc { font-size: 0.875rem; color: var(--ma-gray-600); }
+.apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+.serial-number-display { font-size: 1.5rem; font-weight: 700; font-family: monospace; background-color: var(--ma-blue-light); color: var(--ma-blue-dark); padding: 0.75rem 1.5rem; border-radius: 4px; border: 2px solid var(--ma-blue); letter-spacing: 0.1em; display: inline-block; }
+.firearm-entry { background: var(--ma-gray-100); border: 1px solid var(--ma-border); border-radius: 4px; padding: 1rem; margin-bottom: 1rem; }
+.firearm-entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+.back-nav { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--ma-blue); font-size: 0.9rem; font-weight: 600; text-decoration: none; margin-bottom: 1.25rem; cursor: pointer; background: none; border: none; padding: 0; }
+.back-nav:hover { color: var(--ma-blue-dark); }
+.admin-banner { background-color: var(--ma-yellow-light); border: 1px solid var(--ma-yellow); border-left: 4px solid #e6a800; padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.9rem; }
+.confirmation-page { text-align: center; padding: 3rem 2rem; }
+.confirmation-icon { font-size: 4rem; margin-bottom: 1rem; }
+.confirmation-ticket { background-color: var(--ma-gray-100); border: 1px solid var(--ma-border); border-radius: 4px; padding: 1.25rem; display: inline-block; margin: 1rem 0; min-width: 280px; text-align: left; }
+.attest-box { background-color: var(--ma-blue-light); border: 1px solid var(--ma-blue); border-radius: 4px; padding: 1rem; margin: 1rem 0; }
+.help-file { background: var(--ma-yellow-light); border: 1px solid var(--ma-yellow); border-radius: 4px; padding: 1rem; margin-bottom: 1.25rem; font-size: 0.875rem; }
+.help-file-title { font-weight: 700; margin-bottom: 0.4rem; }
+.help-file ol { margin-left: 1.25rem; }
+.help-file li { margin-bottom: 0.25rem; }
+@media (max-width: 768px) { .form-row-2, .form-row-3 { grid-template-columns: 1fr; } .apps-grid { grid-template-columns: 1fr; } }
