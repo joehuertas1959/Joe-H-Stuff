@@ -124,7 +124,7 @@ export default function SerializationRequest() {
 
           <div className="btn-group">
             <button className="btn btn-primary" onClick={() => window.print()}>🖨️ Print Serial Number Document</button>
-            <button className="btn btn-secondary" onClick={() => navigate('/fa10/registration')}>Register this Firearm</button>
+            <button className="btn btn-secondary" onClick={() => navigate('/pta/registration')}>Register this Firearm</button>
             <button className="btn btn-secondary" onClick={() => navigate('/')}>Return to Portal</button>
           </div>
         </div>

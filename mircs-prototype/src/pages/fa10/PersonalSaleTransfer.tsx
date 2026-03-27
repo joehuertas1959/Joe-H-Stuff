@@ -9,7 +9,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FirearmEntry from '../../components/FirearmEntry';
 import type { Firearm } from '../../types';
-import { NO_LICENSE_REASONS } from '../../types';
+const NO_LICENSE_REASONS = [
+  'Acquired by inheritance or bequest',
+  'Law enforcement or military exemption',
+  'Non-resident temporary possession',
+  'Court-ordered return of firearm',
+  'Other',
+];
 
 type Step = 'role' | 'party-info' | 'firearm' | 'transaction-details' | 'review' | 'confirm';
 

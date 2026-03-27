@@ -7,7 +7,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FirearmEntry from '../../components/FirearmEntry';
 import type { Firearm } from '../../types';
-import { NO_LICENSE_REASONS, LICENSE_TYPES } from '../../types';
+import { LICENSE_TYPES } from '../../types';
+
+const NO_LICENSE_REASONS = [
+  'Acquired by inheritance or bequest',
+  'Law enforcement or military exemption',
+  'Non-resident temporary possession',
+  'Court-ordered return of firearm',
+  'Other',
+];
 
 type RegistrantType = 'licensed' | 'non-licensed' | 'entity' | '';
 
@@ -21,9 +29,9 @@ export default function FirearmRegistration() {
   const [firstName, setFirstName] = useState('John');
   const [lastName, setLastName] = useState('Smith');
   const [address, setAddress] = useState('123 Main St');
-  const [city, setCity] = useState('Boston');
-  const [state, setState] = useState('MA');
-  const [zip, setZip] = useState('02101');
+  const [city, setCity] = useState('Honolulu');
+  const [state, setState] = useState('HI');
+  const [zip, setZip] = useState('96813');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [licenseType, setLicenseType] = useState('');
@@ -46,11 +54,11 @@ export default function FirearmRegistration() {
   if (submitted) {
     return (
       <div>
-        <button className="back-nav" onClick={() => navigate('/fa10')}>← Back to FA-10</button>
+        <button className="back-nav" onClick={() => navigate('/pta')}>← Back to PTA Portal</button>
         <div className="card confirmation-page">
           <div className="confirmation-icon">📝</div>
           <h2 style={{ color: '#388557' }}>Firearm(s) Successfully Registered</h2>
-          <p style={{ color: '#616161' }}>Your firearm registration has been recorded in the Massachusetts Electronic Firearms Registry.</p>
+          <p style={{ color: '#616161' }}>Your firearm registration has been recorded with the Honolulu Police Department per HRS §134-3.</p>
           {firearms.map((f, i) => (
             <div key={i} className="confirmation-ticket">
               <strong>Registration No.:</strong> {regNumber}-{i + 1}<br />
@@ -63,7 +71,7 @@ export default function FirearmRegistration() {
           ))}
           <div className="btn-group" style={{ justifyContent: 'center' }}>
             <button className="btn btn-primary" onClick={() => window.print()}>🖨️ Print Registration</button>
-            <button className="btn btn-secondary" onClick={() => navigate('/fa10')}>Return to FA-10</button>
+            <button className="btn btn-secondary" onClick={() => navigate('/pta')}>Return to FA-10</button>
           </div>
         </div>
       </div>
@@ -72,18 +80,18 @@ export default function FirearmRegistration() {
 
   return (
     <div>
-      <button className="back-nav" onClick={() => navigate('/fa10')}>← Back to FA-10</button>
-      <h1 style={{ color: '#0d3f6b' }}>Register a Firearm</h1>
+      <button className="back-nav" onClick={() => navigate('/pta')}>← Back to PTA Portal</button>
+      <h1 style={{ color: '#1B2A4A' }}>Register a Firearm (HRS §134-3)</h1>
 
-      {/* REQ-0057: Time of Registration Help File */}
+      {/* HRS §134-3: Registration Timing */}
       <div className="help-file">
-        <div className="help-file-title">📋 Registration Timing Requirements</div>
+        <div className="help-file-title">📋 Registration Requirements — HRS §134-3</div>
         <ol>
-          <li>Registration shall be completed at the time of import, purchase, acquisition, manufacture, or assembly.</li>
-          <li>Firearms imported by a new resident may be registered within <strong>60 days</strong>.</li>
-          <li>Firearms imported by a licensed dealer, gunsmith, distributor, or manufacturer may be registered within <strong>7 days</strong>.</li>
-          <li>Firearms acquired by an heir or devisee through distribution of an estate may be registered within <strong>60 days</strong>.</li>
-          <li>Firearms manufactured or assembled as a privately-made firearm may be registered within <strong>7 days</strong>.</li>
+          <li>All firearms acquired via Permit to Acquire must be registered with HPD within <strong>5 days</strong> of acquisition.</li>
+          <li>Firearms imported by a new Hawaii resident must be registered within <strong>5 days</strong> of arrival.</li>
+          <li>Privately made firearms must be registered within <strong>5 days</strong> of manufacture or assembly.</li>
+          <li>Firearms inherited through an estate must be registered within <strong>5 days</strong> of acquisition.</li>
+          <li>Non-residents temporarily visiting Hawaii must register within <strong>5 days</strong> of arrival with the firearm.</li>
         </ol>
       </div>
 
@@ -95,8 +103,8 @@ export default function FirearmRegistration() {
           </p>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
             {[
-              { val: 'licensed' as RegistrantType, label: 'I have a Massachusetts firearms license', icon: '🪪' },
-              { val: 'non-licensed' as RegistrantType, label: 'I do not have a Massachusetts firearms license', icon: '👤' },
+              { val: 'licensed' as RegistrantType, label: 'I have a Hawaii PTA or LTC (Permit to Acquire / License to Carry)', icon: '🪪' },
+              { val: 'non-licensed' as RegistrantType, label: 'I am registering under an exemption (no PTA required)', icon: '👤' },
               { val: 'entity' as RegistrantType, label: 'I am registering on behalf of a business or museum', icon: '🏢' },
             ].map(({ val, label, icon }) => (
               <button key={val}
@@ -118,7 +126,7 @@ export default function FirearmRegistration() {
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
                 <div className="form-group" style={{ flex: 1, margin: 0 }}>
                   <label className="form-label">License No. <span className="required-mark">*</span></label>
-                  <input type="text" className="form-control" value={licenseNo} onChange={e => setLicenseNo(e.target.value)} placeholder="e.g. LTC-12345" />
+                  <input type="text" className="form-control" value={licenseNo} onChange={e => setLicenseNo(e.target.value)} placeholder="e.g. PTA-2025-048812 or LTC-2025-001847" />
                 </div>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">PIN</label>
@@ -238,9 +246,9 @@ export default function FirearmRegistration() {
             <div className="form-check">
               <input type="checkbox" id="attest-reg" checked={attested} onChange={e => setAttested(e.target.checked)} />
               <label className="form-check-label" htmlFor="attest-reg" style={{ fontStyle: 'italic' }}>
-                "I attest under the pains and penalties of perjury that I am properly licensed, permitted
-                or exempted under the laws of the commonwealth and am not otherwise prohibited from owning
-                or possessing a firearm."
+                "I certify under penalty of law that I am properly licensed, permitted, or exempted under
+                Hawaii Revised Statutes Chapter 134 and am not otherwise prohibited from owning or
+                possessing a firearm. I understand that providing false information is a criminal offense."
               </label>
             </div>
           </div>
