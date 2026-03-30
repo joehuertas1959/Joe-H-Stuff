@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Person {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  dob         String
+  ssn         String?
+  address     String
+  city        String
+  state       String   @default("HI")
+  zip         String
+  email       String?
+  phone       String?
+  race        String?
+  ethnicity   String?
+  gender      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permits              Permit[]
+  licenses             License[]
+  registrations        FirearmRegistration[]
+  lostStolenReports    LostStolenReport[]
+  serializationRequests SerializationRequest[]
+  buyerTransactions    Transaction[] @relation("Buyer")
+  sellerTransactions   Transaction[] @relation("Seller")
+}
+
+model Firearm {
+  id              String  @id @default(cuid())
+  type            String
+  make            String
+  model           String
+  caliber         String
+  barrelLength    String?
+  serialNumber    String  @unique
+  surfaceFinish   String?
+  isSemiAutomatic Boolean @default(false)
+  isPrivatelyMade Boolean @default(false)
+  isLargeCapacity Boolean @default(false)
+  countryOfOrigin String?
+  createdAt       DateTime @default(now())
+
+  registrations FirearmRegistration[]
+  transactions  Transaction[]
+  lostStolen    LostStolenReport[]
+}
+
+model Permit {
+  id           String   @id @default(cuid())
+  permitNumber String   @unique
+  type         String   // PTA_PISTOL_REVOLVER | PTA_RIFLE_SHOTGUN
+  status       String   @default("pending") // pending | approved | denied | expired
+  fee          Float    @default(26.0)
+  personId     String
+  person       Person   @relation(fields: [personId], references: [id])
+  denialReason String?
+  expiresAt    DateTime?
+  approvedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model License {
+  id            String   @id @default(cuid())
+  licenseNumber String   @unique
+  type          String   // LTC_CONCEALED | LTC_OPEN
+  status        String   @default("pending") // pending | active | expired | suspended | revoked
+  fee           Float    @default(100.0)
+  personId      String
+  person        Person   @relation(fields: [personId], references: [id])
+  trainingType  String?
+  goodCause     String?
+  denialReason  String?
+  expiresAt     DateTime?
+  approvedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model FirearmRegistration {
+  id         String   @id @default(cuid())
+  regNumber  String   @unique
+  personId   String
+  person     Person   @relation(fields: [personId], references: [id])
+  firearmId  String
+  firearm    Firearm  @relation(fields: [firearmId], references: [id])
+  permitId   String?
+  createdAt  DateTime @default(now())
+}
+
+model Dealer {
+  id            String   @id @default(cuid())
+  licenseNumber String   @unique
+  fflNumber     String?
+  name          String
+  address       String
+  city          String
+  state         String   @default("HI")
+  zip           String
+  phone         String?
+  email         String?
+  status        String   @default("active") // active | suspended | revoked | expired
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id           String   @id @default(cuid())
+  ticketNumber String   @unique
+  type         String   // Sale | Transfer | Loan | Bequest
+  firearmId    String
+  firearm      Firearm  @relation(fields: [firearmId], references: [id])
+  sellerId     String?
+  seller       Person?  @relation("Seller", fields: [sellerId], references: [id])
+  buyerId      String?
+  buyer        Person?  @relation("Buyer", fields: [buyerId], references: [id])
+  dealerId     String?
+  dealer       Dealer?  @relation(fields: [dealerId], references: [id])
+  status       String   @default("pending") // pending | approved | completed | rejected
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model LostStolenReport {
+  id           String   @id @default(cuid())
+  reportNumber String   @unique
+  firearmId    String
+  firearm      Firearm  @relation(fields: [firearmId], references: [id])
+  reporterId   String
+  reporter     Person   @relation(fields: [reporterId], references: [id])
+  type         String   // Lost | Stolen
+  location     String?
+  description  String?
+  status       String   @default("open") // open | recovered | closed
+  reportedAt   DateTime @default(now())
+  recoveredAt  DateTime?
+}
+
+model SerializationRequest {
+  id             String   @id @default(cuid())
+  serialNumber   String   @unique
+  firearmType    String
+  make           String?
+  model          String?
+  caliber        String?
+  meansOfProd    String
+  applicantId    String
+  applicant      Person   @relation(fields: [applicantId], references: [id])
+  status         String   @default("pending") // pending | issued | denied
+  createdAt      DateTime @default(now())
+  issuedAt       DateTime?
+}
+
+model AdminMessage {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  severity  String   @default("info") // info | warning | critical
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+}
+
+// Vector embeddings stored alongside records for semantic search
+model Embedding {
+  id         String @id @default(cuid())
+  entityType String // Person | Firearm | Permit | License | Transaction
+  entityId   String
+  text       String // the text that was embedded
+  vector     String // JSON-serialized float array
+  createdAt  DateTime @default(now())
+
+  @@unique([entityType, entityId])
+  @@index([entityType])
+}
