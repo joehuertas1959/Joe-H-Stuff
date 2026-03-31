@@ -58,6 +58,11 @@ export const FIREARM_MAKES = [
   'Mossberg',
   'Beretta',
   'Springfield Armory',
+  'Taurus',
+  'Walther',
+  'HK (Heckler & Koch)',
+  'CZ',
+  'Kimber',
   'Other',
 ];
 
