@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HHS Procurement Intelligence Scanner — PROMPTJH v4.0</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <div class="brand-title">HHS Procurement Intelligence Scanner</div>
+          <div class="brand-sub">PROMPTJH-SCAN v4.0 &nbsp;·&nbsp; Effective 2026-04-01</div>
+        </div>
+      </div>
+      <div class="header-deadline">
+        <div class="deadline-label">H.R. 1 CE Deadline</div>
+        <div class="deadline-value" id="hr1Countdown">— days</div>
+        <div class="deadline-sub">Jan. 1, 2027</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Pipeline KPI Bar ───────────────────────────────────────────── -->
+  <div class="kpi-bar" id="kpiBar">
+    <div class="kpi-card">
+      <div class="kpi-value" id="kpiTotal">—</div>
+      <div class="kpi-label">Total Opportunities</div>
+    </div>
+    <div class="kpi-card kpi-green">
+      <div class="kpi-value" id="kpiValue">—</div>
+      <div class="kpi-label">Est. Pipeline ($M)</div>
+    </div>
+    <div class="kpi-card kpi-red">
+      <div class="kpi-value" id="kpiCritical">—</div>
+      <div class="kpi-label">Critical / High</div>
+    </div>
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-value" id="kpiHighWin">—</div>
+      <div class="kpi-label">High Win Probability</div>
+    </div>
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-value" id="kpiAPD">—</div>
+      <div class="kpi-label">APD-Confirmed</div>
+    </div>
+    <div class="kpi-card kpi-orange">
+      <div class="kpi-value" id="kpiRecompete">—</div>
+      <div class="kpi-label">Near-Term Recompetes</div>
+    </div>
+  </div>
+
+  <!-- ── Main Layout ────────────────────────────────────────────────── -->
+  <div class="app-body">
+
+    <!-- Scan Control Panel -->
+    <aside class="sidebar">
+      <section class="panel">
+        <h3 class="panel-title">Scan Controls</h3>
+
+        <div class="api-key-group">
+          <label for="samApiKey">SAM.gov API Key</label>
+          <input type="text" id="samApiKey" placeholder="DEMO_KEY (default)" />
+          <div class="field-hint">Register free at sam.gov for higher limits.</div>
+        </div>
+
+        <div class="scan-buttons">
+          <button class="btn btn-primary btn-full" id="btnScanAll" onclick="runScan('all')">
+            ▶ Run Full Scan (All Tiers)
+          </button>
+          <div class="tier-buttons">
+            <button class="btn btn-tier" onclick="runScan('1')" title="Daily: TennCare, VA DMAS, OK OHCA">
+              Tier 1 <span class="tier-badge">Daily</span>
+            </button>
+            <button class="btn btn-tier" onclick="runScan('2')" title="Weekly: Iowa DAS, CMS APD">
+              Tier 2 <span class="tier-badge">Weekly</span>
+            </button>
+            <button class="btn btn-tier" onclick="runScan('3')" title="Weekly: SAM.gov, USASpending.gov">
+              Tier 3 <span class="tier-badge">Weekly</span>
+            </button>
+            <button class="btn btn-tier" onclick="runScan('4')" title="Monthly: OIG Work Plan">
+              Tier 4 <span class="tier-badge">Monthly</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="scanStatus" class="scan-status hidden">
+          <div class="scan-spinner"></div>
+          <div class="scan-status-text">Scan in progress…</div>
+        </div>
+
+        <div id="lastScanInfo" class="last-scan-info"></div>
+      </section>
+
+      <section class="panel">
+        <h3 class="panel-title">Export</h3>
+        <button class="btn btn-export btn-full" onclick="downloadExcel()">
+          📊 Download Excel (24-col, 6-sheet)
+        </button>
+        <button class="btn btn-export-md btn-full" onclick="downloadMarkdown()">
+          📄 Download Daily Roundup (.md)
+        </button>
+        <button class="btn btn-danger btn-full" onclick="clearData()" style="margin-top:1rem;">
+          🗑 Clear All Data
+        </button>
+      </section>
+
+      <section class="panel">
+        <h3 class="panel-title">Scan Log</h3>
+        <div id="scanLog" class="scan-log">
+          <div class="log-empty">Run a scan to see live log output.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3 class="panel-title">Sources</h3>
+        <div class="source-list">
+          <div class="source-item tier1"><span class="tier-dot t1"></span> TennCare Portal</div>
+          <div class="source-item tier1"><span class="tier-dot t1"></span> Virginia DMAS</div>
+          <div class="source-item tier1"><span class="tier-dot t1"></span> Oklahoma OHCA</div>
+          <div class="source-item tier2"><span class="tier-dot t2"></span> Iowa DAS (DataTables)</div>
+          <div class="source-item tier2"><span class="tier-dot t2"></span> CMS APD Database</div>
+          <div class="source-item tier3"><span class="tier-dot t3"></span> SAM.gov API</div>
+          <div class="source-item tier3"><span class="tier-dot t3"></span> USASpending.gov API</div>
+          <div class="source-item tier4"><span class="tier-dot t4"></span> HHS OIG Work Plan</div>
+        </div>
+        <div class="tier-legend">
+          <span class="tier-dot t1"></span>Tier 1 Daily &nbsp;
+          <span class="tier-dot t2"></span>Tier 2 Weekly &nbsp;
+          <span class="tier-dot t3"></span>Tier 3 Weekly &nbsp;
+          <span class="tier-dot t4"></span>Tier 4 Monthly
+        </div>
+      </section>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label>State</label>
+          <select id="filterState" onchange="applyFilters()">
+            <option value="">All States</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Category</label>
+          <select id="filterCategory" onchange="applyFilters()">
+            <option value="">All Categories</option>
+            <optgroup label="MES">
+              <option value="MES-Claims">MES-Claims</option>
+              <option value="MES-E&E">MES-E&amp;E</option>
+              <option value="MES-Provider">MES-Provider</option>
+              <option value="MES-BI">MES-BI</option>
+              <option value="MES-FHIR">MES-FHIR</option>
+            </optgroup>
+            <optgroup label="MMIS / Work Req.">
+              <option value="MMIS-Modernization">MMIS-Modernization</option>
+              <option value="Work-Requirements">Work-Requirements</option>
+              <option value="CHIP">CHIP</option>
+            </optgroup>
+            <optgroup label="COOP">
+              <option value="COOP-BCM">COOP-BCM</option>
+              <option value="COOP-DR">COOP-DR</option>
+            </optgroup>
+            <optgroup label="ERM">
+              <option value="ERM-GRC">ERM-GRC</option>
+              <option value="ERM-Assessment">ERM-Assessment</option>
+            </optgroup>
+            <optgroup label="Audit">
+              <option value="AUDIT-ITAudit">AUDIT-ITAudit</option>
+              <option value="AUDIT-NIST80053">AUDIT-NIST80053</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option value="MCO-Rebid">MCO-Rebid</option>
+              <option value="APD-DDI">APD-DDI</option>
+              <option value="RECOMPETE-Expiring">RECOMPETE-Expiring</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Urgency</label>
+          <select id="filterUrgency" onchange="applyFilters()">
+            <option value="">All</option>
+            <option value="CRITICAL">CRITICAL</option>
+            <option value="HIGH">HIGH</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="LOW">LOW</option>
+            <option value="WATCH">WATCH</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Win Prob.</label>
+          <select id="filterWin" onchange="applyFilters()">
+            <option value="">All</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+            <option value="Long Shot">Long Shot</option>
+          </select>
+        </div>
+        <div class="filter-group filter-search">
+          <label>Search</label>
+          <input type="text" id="filterSearch" placeholder="Title, agency, notes…" oninput="applyFilters()" />
+        </div>
+        <div class="filter-group">
+          <label>&nbsp;</label>
+          <button class="btn btn-sm" onclick="clearFilters()">Clear</button>
+        </div>
+      </div>
+
+      <!-- Result count -->
+      <div class="results-meta" id="resultsMeta">Run a scan to discover procurement opportunities.</div>
+
+      <!-- Opportunities Table -->
+      <div class="table-wrap">
+        <table class="opps-table" id="oppsTable">
+          <thead>
+            <tr>
+              <th class="col-state sortable" data-col="state" onclick="sortBy('state')">State ↕</th>
+              <th class="col-title sortable" data-col="opportunity_title" onclick="sortBy('opportunity_title')">Opportunity ↕</th>
+              <th class="col-cat">Category</th>
+              <th class="col-urg sortable" data-col="urgency" onclick="sortBy('urgency')">Urgency ↕</th>
+              <th class="col-win sortable" data-col="win_probability" onclick="sortBy('win_probability')">Win Prob. ↕</th>
+              <th class="col-val sortable" data-col="est_value_m" onclick="sortBy('est_value_m')">Value ($M) ↕</th>
+              <th class="col-due sortable" data-col="due_date" onclick="sortBy('due_date')">Due Date ↕</th>
+              <th class="col-status">Status</th>
+              <th class="col-apd">APD</th>
+              <th class="col-hr1">H.R.1</th>
+              <th class="col-links">Links</th>
+            </tr>
+          </thead>
+          <tbody id="oppsTableBody">
+            <tr class="empty-row">
+              <td colspan="11">No opportunities loaded. Run a scan to begin.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Detail Panel (expanded row) -->
+      <div id="detailPanel" class="detail-panel hidden">
+        <div class="detail-inner">
+          <button class="detail-close" onclick="closeDetail()">✕ Close</button>
+          <div id="detailContent"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
