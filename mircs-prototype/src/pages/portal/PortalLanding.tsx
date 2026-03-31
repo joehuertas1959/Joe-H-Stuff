@@ -3,14 +3,61 @@
 // REQ-0063: Remove License Rules
 // REQ-0065: On-Screen PIN Retrieval
 // REQ-0177: Expiration notification
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getLicenses } from '../../api/client';
 
-const MOCK_LICENSES = [
-  { type: 'License to Carry Firearms (LTC)', number: 'LTC-12345', status: 'Active', expires: '2027-08-15', issuedBy: 'Boston PD' },
-];
+interface License {
+  id: string;
+  licenseNumber: string;
+  type: string;
+  status: string;
+  expiresAt: string | null;
+  approvedAt: string | null;
+  person: {
+    firstName: string;
+    lastName: string;
+    city: string;
+  };
+}
+
+function formatLicenseType(type: string): string {
+  if (type === 'LTC_CONCEALED') return 'License to Carry (Concealed)';
+  if (type === 'LTC_OPEN') return 'License to Carry (Open)';
+  return type.replace(/_/g, ' ');
+}
+
+function statusBadge(status: string) {
+  const map: Record<string, string> = {
+    active: 'badge-active',
+    pending: 'badge-pending',
+    expired: 'badge-expired',
+    suspended: 'badge-suspended',
+    revoked: 'badge-denied',
+  };
+  const cls = map[status] ?? 'badge-pending';
+  return <span className={`badge ${cls}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>;
+}
 
 export default function PortalLanding() {
   const navigate = useNavigate();
+  const [licenses, setLicenses] = useState<License[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getLicenses()
+      .then((data: any) => setLicenses(data as License[]))
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Find soonest-expiring active license for the warning banner
+  const soonExpiring = licenses
+    .filter(l => l.status === 'active' && l.expiresAt)
+    .sort((a, b) => new Date(a.expiresAt!).getTime() - new Date(b.expiresAt!).getTime())[0];
+
+  const pendingApplications = licenses.filter(l => l.status === 'pending');
 
   return (
     <div>
@@ -19,20 +66,22 @@ export default function PortalLanding() {
       {/* REQ-0060: Firearms Services link at top */}
       <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
         <strong>ℹ️ Resources:</strong> Please visit{' '}
-        <a href="#">mass.gov/firearms-services</a> for additional information about Massachusetts firearms laws and requirements.
+        <a href="#">hawaii.gov/firearms-services</a> for additional information about Hawaii firearms laws and requirements.
       </div>
 
       <h1 style={{ color: '#0d3f6b' }}>MIRCS Firearms Licensing Portal</h1>
 
-      {/* REQ-0177: Expiration notification */}
-      <div className="alert alert-warning">
-        <strong>⚠️ License Expiration Notice:</strong> Your License to Carry Firearms (LTC-12345) will
-        expire on <strong>August 15, 2027</strong>. We encourage you to start your renewal application as
-        soon as possible. <a href="#">Start Renewal →</a>
-        <br /><br />
-        <em>Grace Period: If you apply for renewal before your expiration date, your current license
-        remains active until a decision is rendered (LTC and FID only).</em>
-      </div>
+      {/* REQ-0177: Expiration notification — driven by live data */}
+      {soonExpiring && (
+        <div className="alert alert-warning">
+          <strong>⚠️ License Expiration Notice:</strong> Your {formatLicenseType(soonExpiring.type)} ({soonExpiring.licenseNumber}) will
+          expire on <strong>{new Date(soonExpiring.expiresAt!).toLocaleDateString()}</strong>. We encourage you to start your renewal application as
+          soon as possible. <a href="#">Start Renewal →</a>
+          <br /><br />
+          <em>Grace Period: If you apply for renewal before your expiration date, your current license
+          remains active until a decision is rendered (LTC only).</em>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.25rem' }}>
         <div>
@@ -53,38 +102,75 @@ export default function PortalLanding() {
           {/* REQ-0062: Available Services shown post-login */}
           <div className="card">
             <div className="card-title">My Licenses</div>
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr><th>License Type</th><th>Number</th><th>Status</th><th>Expires</th><th>Issued By</th></tr>
-                </thead>
-                <tbody>
-                  {MOCK_LICENSES.map(lic => (
-                    <tr key={lic.number}>
-                      <td>{lic.type}</td>
-                      <td>{lic.number}</td>
-                      <td><span className="badge badge-active">{lic.status}</span></td>
-                      <td>{lic.expires}</td>
-                      <td>{lic.issuedBy}</td>
+
+            {loading && (
+              <p style={{ color: '#616161', fontSize: '0.875rem', padding: '0.5rem 0' }}>Loading licenses…</p>
+            )}
+            {error && (
+              <div className="alert alert-danger" style={{ fontSize: '0.875rem' }}>
+                Could not load licenses: {error}
+              </div>
+            )}
+            {!loading && !error && (
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>License Type</th>
+                      <th>Number</th>
+                      <th>Status</th>
+                      <th>Expires</th>
+                      <th>Holder</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {licenses.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: 'center', color: '#9e9e9e', padding: '1rem' }}>
+                          No licenses on file.
+                        </td>
+                      </tr>
+                    ) : (
+                      licenses.map(lic => (
+                        <tr key={lic.id}>
+                          <td>{formatLicenseType(lic.type)}</td>
+                          <td><strong>{lic.licenseNumber}</strong></td>
+                          <td>{statusBadge(lic.status)}</td>
+                          <td>{lic.expiresAt ? new Date(lic.expiresAt).toLocaleDateString() : '—'}</td>
+                          <td>{lic.person.firstName} {lic.person.lastName}, {lic.person.city}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           <div className="card">
             <div className="card-title">My Applications</div>
             <div className="table-container">
               <table>
-                <thead><tr><th>App No.</th><th>Type</th><th>Status</th><th>Submitted</th></tr></thead>
+                <thead>
+                  <tr><th>License No.</th><th>Type</th><th>Status</th><th>Applied</th></tr>
+                </thead>
                 <tbody>
-                  <tr>
-                    <td><a href="#">APP-2025-100001</a></td>
-                    <td>Renewal — LTC</td>
-                    <td><span className="badge badge-pending">Under Review</span></td>
-                    <td>2025-03-01</td>
-                  </tr>
+                  {pendingApplications.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', color: '#9e9e9e', padding: '1rem' }}>
+                        No applications in progress.
+                      </td>
+                    </tr>
+                  ) : (
+                    pendingApplications.map(lic => (
+                      <tr key={lic.id}>
+                        <td><a href="#">{lic.licenseNumber}</a></td>
+                        <td>{formatLicenseType(lic.type)}</td>
+                        <td><span className="badge badge-pending">Pending Review</span></td>
+                        <td>{lic.approvedAt ? new Date(lic.approvedAt).toLocaleDateString() : '—'}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

@@ -1,16 +1,32 @@
 // RFP-HPD-1954933: HPD Dealer Portal — HRS §134-14
 // Licensed Firearms Dealer Transactions, Inventory, Serial Number Requests
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getDealers, getTransactions } from '../../api/client';
 
-const MOCK_DEALER = {
-  name: 'Aloha Arms & Outdoors LLC',
-  licenseNo: 'DLR-HI-00882',
-  federalFFL: 'FFL-96-12345',
-  city: 'Honolulu',
-  address: '1225 Kalani Street, Honolulu, HI 96817',
-  status: 'Active',
-  licenseExpires: '2026-12-31',
-};
+interface Dealer {
+  id: string;
+  name: string;
+  licenseNumber: string;
+  fflNumber: string | null;
+  city: string;
+  address: string;
+  state: string;
+  status: string;
+  expiresAt: string | null;
+}
+
+interface Transaction {
+  id: string;
+  ticketNumber: string;
+  type: string;
+  status: string;
+  createdAt: string;
+  firearm: { make: string; model: string; type: string; serialNumber: string };
+  buyer: { firstName: string; lastName: string } | null;
+  seller: { firstName: string; lastName: string } | null;
+  dealer: { licenseNumber: string; name: string } | null;
+}
 
 const dealerMenuItems = [
   {
@@ -57,14 +73,36 @@ const dealerMenuItems = [
     id: 'cross-county',
     icon: '🏝️',
     title: 'Statewide License Validation',
-    desc: 'Validate a customer\'s permit or license across all Hawaii counties before completing a sale.',
+    desc: "Validate a customer's permit or license across all Hawaii counties before completing a sale.",
     path: '/dealer',
     hrsRef: 'HRS §134-2',
   },
 ];
 
+function txStatusBadge(status: string) {
+  const cls = status === 'completed' ? 'badge-approved'
+    : status === 'pending' ? 'badge-pending'
+    : status === 'rejected' ? 'badge-denied'
+    : 'badge-pending';
+  return <span className={`badge ${cls}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>;
+}
+
 export default function DealerLanding() {
   const navigate = useNavigate();
+  const [dealer, setDealer] = useState<Dealer | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([getDealers() as Promise<Dealer[]>, getTransactions() as Promise<Transaction[]>])
+      .then(([dealers, txs]) => {
+        setDealer(dealers[0] ?? null);
+        setTransactions(txs.slice(0, 5));
+      })
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div>
@@ -75,15 +113,33 @@ export default function DealerLanding() {
           <h1 style={{ color: '#1B2A4A', marginBottom: '0.25rem' }}>HPD Dealer Portal</h1>
           <p style={{ color: '#5A7490' }}>Licensed Firearms Dealer — Honolulu Police Department &nbsp;|&nbsp; HRS §134-14</p>
         </div>
-        <div style={{ background: '#E8EEF5', border: '1px solid #B0C4DE', borderRadius: 6, padding: '0.75rem 1.25rem', fontSize: '0.875rem' }}>
-          <div style={{ fontWeight: 700, color: '#1B2A4A' }}>{MOCK_DEALER.name}</div>
-          <div style={{ color: '#5A7490' }}>License: {MOCK_DEALER.licenseNo}</div>
-          <div style={{ color: '#5A7490' }}>FFL: {MOCK_DEALER.federalFFL}</div>
-          <div style={{ color: '#5A7490' }}>📍 {MOCK_DEALER.city}, HI</div>
-          <div style={{ marginTop: '0.25rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-            <span className="badge badge-approved">Active License</span>
-            <span style={{ fontSize: '0.72rem', color: '#6A849C' }}>Expires: {MOCK_DEALER.licenseExpires}</span>
-          </div>
+
+        {/* Dealer info card — live from /api/dealers */}
+        <div style={{ background: '#E8EEF5', border: '1px solid #B0C4DE', borderRadius: 6, padding: '0.75rem 1.25rem', fontSize: '0.875rem', minWidth: 220 }}>
+          {loading ? (
+            <p style={{ color: '#616161', margin: 0 }}>Loading dealer info…</p>
+          ) : error ? (
+            <p style={{ color: '#c62828', margin: 0, fontSize: '0.8rem' }}>Error: {error}</p>
+          ) : dealer ? (
+            <>
+              <div style={{ fontWeight: 700, color: '#1B2A4A' }}>{dealer.name}</div>
+              <div style={{ color: '#5A7490' }}>License: {dealer.licenseNumber}</div>
+              {dealer.fflNumber && <div style={{ color: '#5A7490' }}>FFL: {dealer.fflNumber}</div>}
+              <div style={{ color: '#5A7490' }}>📍 {dealer.city}, {dealer.state}</div>
+              <div style={{ marginTop: '0.25rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <span className={`badge ${dealer.status === 'active' ? 'badge-approved' : 'badge-pending'}`}>
+                  {dealer.status.charAt(0).toUpperCase() + dealer.status.slice(1)} License
+                </span>
+                {dealer.expiresAt && (
+                  <span style={{ fontSize: '0.72rem', color: '#6A849C' }}>
+                    Expires: {new Date(dealer.expiresAt).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <p style={{ color: '#9e9e9e', margin: 0 }}>No dealer record found.</p>
+          )}
         </div>
       </div>
 
@@ -109,46 +165,59 @@ export default function DealerLanding() {
         ))}
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Activity — live from /api/transactions */}
       <div className="card">
-        <div className="card-title">Recent Activity — {MOCK_DEALER.name}</div>
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Ticket No.</th>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>PTA Verified</th>
-                <th>Firearm</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { ticket: 'DLR-2025-100421', date: '2025-03-20', customer: 'Nakamura, Keali\'i', pta: 'PTA-2025-048812', fa: 'Glock 17 (Pistol)', status: 'Completed' },
-                { ticket: 'DLR-2025-100420', date: '2025-03-19', customer: 'Yamamoto, Hana', pta: 'PTA-2025-047901', fa: 'Ruger 10/22 (Rifle)', status: 'Pending' },
-                { ticket: 'DLR-2025-100418', date: '2025-03-17', customer: 'Kahananui, Maile', pta: 'PTA-2025-046335', fa: 'S&W M&P (Pistol)', status: 'Completed' },
-              ].map(row => (
-                <tr key={row.ticket}>
-                  <td><a href="#">{row.ticket}</a></td>
-                  <td>{row.date}</td>
-                  <td>{row.customer}</td>
-                  <td style={{ fontSize: '0.8rem', color: '#5A7490' }}>{row.pta}</td>
-                  <td>{row.fa}</td>
-                  <td>
-                    <span className={`badge ${row.status === 'Completed' ? 'badge-approved' : 'badge-pending'}`}>
-                      {row.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="card-title">
+          Recent Activity{dealer ? ` — ${dealer.name}` : ''}
         </div>
+        {loading ? (
+          <p style={{ color: '#616161', fontSize: '0.875rem', padding: '0.5rem 0' }}>Loading transactions…</p>
+        ) : error ? (
+          <div className="alert alert-danger" style={{ fontSize: '0.875rem' }}>Could not load transactions: {error}</div>
+        ) : (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket No.</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Type</th>
+                  <th>Firearm</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', color: '#9e9e9e', padding: '1rem' }}>
+                      No transactions on record.
+                    </td>
+                  </tr>
+                ) : (
+                  transactions.map(tx => (
+                    <tr key={tx.id}>
+                      <td><a href="#">{tx.ticketNumber}</a></td>
+                      <td>{new Date(tx.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        {tx.buyer
+                          ? `${tx.buyer.lastName}, ${tx.buyer.firstName}`
+                          : tx.seller
+                          ? `${tx.seller.lastName}, ${tx.seller.firstName}`
+                          : '—'}
+                      </td>
+                      <td>{tx.type}</td>
+                      <td>{tx.firearm.make} {tx.firearm.model} ({tx.firearm.type})</td>
+                      <td>{txStatusBadge(tx.status)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Cross-County Validation Note */}
       <div className="alert alert-gold">
         <strong>Statewide Compliance (HRS §134-14):</strong> Before completing any sale, verify that the customer
         has a valid Permit to Acquire (PTA) issued by their county police department. PTAs are valid for
