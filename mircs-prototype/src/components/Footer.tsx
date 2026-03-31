@@ -34,8 +34,8 @@ export default function Footer() {
           </div>
         </div>
         <div style={{ borderTop: '1px solid #2a5a8a', paddingTop: '1rem', fontSize: '0.8rem', color: '#8ab4d8', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <span>© 2025 Commonwealth of Massachusetts</span>
-          <span>MIRCS Unified Portal — Prototype v1.0</span>
+          <span>&copy; 2026 Commonwealth of Massachusetts</span>
+          <span>MIRCS Unified Portal — Prototype v1.1</span>
         </div>
       </div>
     </footer>
