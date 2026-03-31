@@ -4,7 +4,7 @@
 // REQ: Mental Health Waiver, Training Certificate Upload, Fingerprinting Appointment
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RACE_VALUES, ETHNICITY_VALUES, GENDER_VALUES, NAME_CHANGE_REASONS, LTC_TRAINING_TYPES, APPOINTMENT_TYPES } from '../../types';
+import { RACE_VALUES, ETHNICITY_VALUES, GENDER_VALUES, LTC_TRAINING_TYPES, APPOINTMENT_TYPES } from '../../types';
 
 const CARRY_TYPES = [
   { value: 'concealed', label: 'Concealed Carry', icon: '🪪', desc: 'Carry a firearm concealed on your person.' },
