@@ -1,8 +1,4 @@
-// REQ-0055: Support Firearm Registration Entry
-// REQ-0056: Add Registration Acknowledgement Language
-// REQ-0057: Time of Registration Help File
-// REQ-0164: Develop Real Time Electronic Firearms Registry
-// REQ-0219: Electronic Registration Effective Date
+// REQ-0055, REQ-0056, REQ-0057, REQ-0164, REQ-0219
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FirearmEntry from '../../components/FirearmEntry';
@@ -30,14 +26,12 @@ export default function FirearmRegistration() {
   const [licenseExpiry, setLicenseExpiry] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [taxId, setTaxId] = useState('');
-  const [isPrivatelyMade] = useState(false);
   const [dateAcquired, setDateAcquired] = useState('');
   const [sourceInfo, setSourceInfo] = useState('');
   const [firearms, setFirearms] = useState<Partial<Firearm>[]>([{}]);
   const [attested, setAttested] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
-  const regNumber = 'REG-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 900000 + 100000);
+  const regNumber = 'REG-2026-' + Math.floor(Math.random() * 900000 + 100000);
 
   function updateFirearm(index: number, field: keyof Firearm, value: string | boolean) {
     setFirearms(prev => prev.map((f, i) => i === index ? { ...f, [field]: value } : f));
@@ -57,8 +51,7 @@ export default function FirearmRegistration() {
               <strong>Date Acquired:</strong> {dateAcquired}<br />
               <strong>Registrant:</strong> {registrantType === 'entity' ? businessName : `${firstName} ${lastName}`}<br />
               <strong>Firearm:</strong> {f.type} — {f.make} {f.model}<br />
-              <strong>Serial #:</strong> {f.serialNumber}<br />
-              {isPrivatelyMade && <><strong>Privately Made:</strong> Yes<br /></>}
+              <strong>Serial #:</strong> {f.serialNumber}
             </div>
           ))}
           <div className="btn-group" style={{ justifyContent: 'center' }}>
@@ -74,8 +67,6 @@ export default function FirearmRegistration() {
     <div>
       <button className="back-nav" onClick={() => navigate('/fa10')}>← Back to FA-10</button>
       <h1 style={{ color: '#0d3f6b' }}>Register a Firearm</h1>
-
-      {/* REQ-0057: Time of Registration Help File */}
       <div className="help-file">
         <div className="help-file-title">📋 Registration Timing Requirements</div>
         <ol>
@@ -90,29 +81,18 @@ export default function FirearmRegistration() {
       {step === 1 && (
         <div className="card">
           <div className="card-title">Step 1: Registrant Type</div>
-          <p style={{ color: '#616161', marginBottom: '1rem', fontSize: '0.875rem' }}>
-            Please indicate your licensing status to determine how to proceed.
-          </p>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
             {[
-              { val: 'licensed' as RegistrantType, label: 'I have a Massachusetts firearms license', icon: '🪪' },
+              { val: 'licensed' as RegistrantType, label: 'I have a Massachusetts firearms license', icon: '🪺' },
               { val: 'non-licensed' as RegistrantType, label: 'I do not have a Massachusetts firearms license', icon: '👤' },
               { val: 'entity' as RegistrantType, label: 'I am registering on behalf of a business or museum', icon: '🏢' },
             ].map(({ val, label, icon }) => (
-              <button key={val}
-                onClick={() => setRegistrantType(val)}
-                style={{
-                  flex: '1 1 200px', background: registrantType === val ? '#e8f0f9' : '#fff',
-                  border: `2px solid ${registrantType === val ? '#14558f' : '#d0d0d0'}`,
-                  borderRadius: 8, padding: '1rem', cursor: 'pointer', textAlign: 'left',
-                }}
-              >
+              <button key={val} onClick={() => setRegistrantType(val)} style={{ flex: '1 1 200px', background: registrantType === val ? '#e8f0f9' : '#fff', border: `2px solid ${registrantType === val ? '#14558f' : '#d0d0d0'}`, borderRadius: 8, padding: '1rem', cursor: 'pointer', textAlign: 'left' }}>
                 <div style={{ fontSize: '1.5rem', marginBottom: '0.35rem' }}>{icon}</div>
                 <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0d3f6b' }}>{label}</div>
               </button>
             ))}
           </div>
-
           {registrantType === 'licensed' && (
             <div>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
@@ -126,12 +106,9 @@ export default function FirearmRegistration() {
                 </div>
                 <button className="btn btn-secondary" type="button">Look Up</button>
               </div>
-              <div className="alert alert-success" style={{ marginTop: '0.75rem' }}>
-                ✅ <strong>{firstName} {lastName}</strong> — LTC Active, expires 2027-08-15
-              </div>
+              <div className="alert alert-success" style={{ marginTop: '0.75rem' }}>✅ <strong>{firstName} {lastName}</strong> — LTC Active, expires 2028-08-15</div>
             </div>
           )}
-
           {registrantType === 'non-licensed' && (
             <div className="form-group">
               <label className="form-label">Reason for No License <span className="required-mark">*</span></label>
@@ -139,26 +116,14 @@ export default function FirearmRegistration() {
                 <option value="">-- Select Reason --</option>
                 {NO_LICENSE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
-              {noLicenseReason === 'Other' && <input className="form-control" style={{ marginTop: '0.4rem', maxWidth: 400 }} placeholder="Specify reason..." />}
-              <p className="form-hint" style={{ marginTop: '0.5rem' }}>
-                If you do not have a driver's license, please enter your Tax ID number.
-              </p>
             </div>
           )}
-
           {registrantType === 'entity' && (
             <div className="form-row-2">
-              <div className="form-group">
-                <label className="form-label">Business / Entity Name <span className="required-mark">*</span></label>
-                <input type="text" className="form-control" value={businessName} onChange={e => setBusinessName(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Tax ID <span className="required-mark">*</span></label>
-                <input type="text" className="form-control" value={taxId} onChange={e => setTaxId(e.target.value)} />
-              </div>
+              <div className="form-group"><label className="form-label">Business / Entity Name <span className="required-mark">*</span></label><input type="text" className="form-control" value={businessName} onChange={e => setBusinessName(e.target.value)} /></div>
+              <div className="form-group"><label className="form-label">Tax ID <span className="required-mark">*</span></label><input type="text" className="form-control" value={taxId} onChange={e => setTaxId(e.target.value)} /></div>
             </div>
           )}
-
           <div className="btn-group">
             <button className="btn btn-primary" disabled={!registrantType} onClick={() => setStep(2)}>Continue →</button>
           </div>
@@ -203,25 +168,14 @@ export default function FirearmRegistration() {
       {step === 3 && (
         <div className="card">
           <div className="card-title">Step 3: Firearm Information</div>
-          <p style={{ color: '#616161', fontSize: '0.875rem', marginBottom: '1rem' }}>
-            You may register up to 10 firearms at one time.
-          </p>
-
+          <p style={{ color: '#616161', fontSize: '0.875rem', marginBottom: '1rem' }}>You may register up to 10 firearms at one time.</p>
           {firearms.map((fa, i) => (
             <FirearmEntry key={i} firearm={fa} index={i} onChange={updateFirearm}
               onRemove={(idx) => setFirearms(prev => prev.filter((_, j) => j !== idx))}
-              showRemove={firearms.length > 1}
-            />
+              showRemove={firearms.length > 1} />
           ))}
-
-          {firearms.length < 10 && (
-            <button className="btn btn-secondary btn-sm" onClick={() => setFirearms(prev => [...prev, {}])}>
-              + Add Another Firearm
-            </button>
-          )}
-
+          {firearms.length < 10 && <button className="btn btn-secondary btn-sm" onClick={() => setFirearms(prev => [...prev, {}])}>+ Add Another Firearm</button>}
           <hr className="section-divider" />
-
           <div className="form-row-2">
             <div className="form-group">
               <label className="form-label">Date Acquired <span className="required-mark">*</span></label>
@@ -229,27 +183,18 @@ export default function FirearmRegistration() {
             </div>
             <div className="form-group">
               <label className="form-label">Source (Name and Address Where Obtained)</label>
-              <input type="text" className="form-control" placeholder='e.g. "Obtained Information — Boston Gun Shop, 100 State St"' value={sourceInfo} onChange={e => setSourceInfo(e.target.value)} />
+              <input type="text" className="form-control" placeholder='e.g. "Boston Gun Shop, 100 State St"' value={sourceInfo} onChange={e => setSourceInfo(e.target.value)} />
             </div>
           </div>
-
-          {/* REQ-0056: Attestation */}
           <div className="attest-box">
             <div className="form-check">
               <input type="checkbox" id="attest-reg" checked={attested} onChange={e => setAttested(e.target.checked)} />
-              <label className="form-check-label" htmlFor="attest-reg" style={{ fontStyle: 'italic' }}>
-                "I attest under the pains and penalties of perjury that I am properly licensed, permitted
-                or exempted under the laws of the commonwealth and am not otherwise prohibited from owning
-                or possessing a firearm."
-              </label>
+              <label className="form-check-label" htmlFor="attest-reg" style={{ fontStyle: 'italic' }}>"I attest under the pains and penalties of perjury that I am properly licensed, permitted or exempted under the laws of the commonwealth and am not otherwise prohibited from owning or possessing a firearm."</label>
             </div>
           </div>
-
           <div className="btn-group">
             <button className="btn btn-secondary" onClick={() => setStep(2)}>← Back</button>
-            <button className="btn btn-success" disabled={!attested || !dateAcquired} onClick={() => setSubmitted(true)}>
-              Submit Registration ✓
-            </button>
+            <button className="btn btn-success" disabled={!attested || !dateAcquired} onClick={() => setSubmitted(true)}>Submit Registration ✓</button>
           </div>
         </div>
       )}
