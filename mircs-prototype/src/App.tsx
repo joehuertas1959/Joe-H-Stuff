@@ -28,10 +28,7 @@ export default function App() {
     <BrowserRouter>
       <Layout>
         <Routes>
-          {/* Unified Portal */}
           <Route path="/" element={<UnifiedPortal />} />
-
-          {/* FA-10 */}
           <Route path="/fa10" element={<FA10Landing />} />
           <Route path="/fa10/personal-sale" element={<PersonalSaleTransfer />} />
           <Route path="/fa10/registration" element={<FirearmRegistration />} />
@@ -39,28 +36,16 @@ export default function App() {
           <Route path="/fa10/inheritance" element={<PlaceholderPage title="Inheritance Transaction" />} />
           <Route path="/fa10/surrender" element={<PlaceholderPage title="Surrender Firearm to Police" />} />
           <Route path="/fa10/license-validation" element={<PlaceholderPage title="Generate Firearms License Validation" />} />
-
-          {/* MIRCS Dealer */}
           <Route path="/dealer" element={<DealerLanding />} />
           <Route path="/dealer/transaction" element={<DealerTransaction />} />
           <Route path="/dealer/serial-request" element={<DealerSerialRequest />} />
           <Route path="/dealer/pending" element={<PlaceholderPage title="Manage Pending Transactions" />} />
           <Route path="/dealer/history" element={<PlaceholderPage title="View Previous Transactions" />} />
-
-          {/* Serialization Module */}
           <Route path="/serialization" element={<SerializationRequest />} />
-
-          {/* MIRCS Portal */}
           <Route path="/portal" element={<PortalLanding />} />
           <Route path="/portal/apply" element={<LicenseApplication />} />
-
-          {/* State Hot Files */}
           <Route path="/statefiles" element={<StateFilesLanding />} />
-
-          {/* Admin */}
           <Route path="/admin" element={<AdminPanel />} />
-
-          {/* 404 */}
           <Route path="*" element={<PlaceholderPage title="Page Not Found" />} />
         </Routes>
       </Layout>
