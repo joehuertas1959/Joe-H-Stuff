@@ -1,0 +1,6 @@
+node_modules/
+dist/
+prisma/mircs.db
+prisma/mircs.db-journal
+.env
+vector_store/
