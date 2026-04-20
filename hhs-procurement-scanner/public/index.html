@@ -108,6 +108,40 @@
         </button>
       </section>
 
+      <section class="panel panel-ai">
+        <h3 class="panel-title">AI Bid Scoring</h3>
+        <div class="api-key-group">
+          <label for="anthropicApiKey">Anthropic API Key</label>
+          <input type="password" id="anthropicApiKey" placeholder="sk-ant-… (or set ANTHROPIC_API_KEY)" />
+          <div class="field-hint">Required to score opportunities with Claude.</div>
+        </div>
+        <button class="btn btn-ai btn-full" id="btnScoreBatch" onclick="scoreBatch()">
+          ✦ Score Next 10 Opportunities
+        </button>
+        <div id="scoreStatus" class="scan-status hidden">
+          <div class="scan-spinner"></div>
+          <div class="scan-status-text">Scoring in progress…</div>
+        </div>
+        <div class="field-hint" style="margin-top:.5rem;">
+          Click a row's score badge to score individually. Scores persist across sessions.
+        </div>
+      </section>
+
+      <section class="panel panel-xfact">
+        <h3 class="panel-title">xFact Integration</h3>
+        <div class="api-key-group">
+          <label for="xfactApiUrl">xFact API URL</label>
+          <input type="text" id="xfactApiUrl" placeholder="https://your-xfact-instance.replit.app" />
+          <div class="field-hint">Optional — for direct push to xFact Proposal Suite.</div>
+        </div>
+        <button class="btn btn-xfact btn-full" onclick="downloadXFact()">
+          ⬇ Export xFact JSON
+        </button>
+        <div class="field-hint" style="margin-top:.4rem;">
+          Exports all opportunities in xFact §3.2 opportunity schema format.
+        </div>
+      </section>
+
       <section class="panel">
         <h3 class="panel-title">Scan Log</h3>
         <div id="scanLog" class="scan-log">
@@ -237,12 +271,13 @@
               <th class="col-status">Status</th>
               <th class="col-apd">APD</th>
               <th class="col-hr1">H.R.1</th>
+              <th class="col-score sortable" data-col="bid_score" onclick="sortBy('bid_score')">AI Score ↕</th>
               <th class="col-links">Links</th>
             </tr>
           </thead>
           <tbody id="oppsTableBody">
             <tr class="empty-row">
-              <td colspan="11">No opportunities loaded. Run a scan to begin.</td>
+              <td colspan="12">No opportunities loaded. Run a scan to begin.</td>
             </tr>
           </tbody>
         </table>

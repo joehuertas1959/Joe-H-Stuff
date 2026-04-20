@@ -7,6 +7,8 @@ const store = require('./server/store');
 const { runScan } = require('./server/scrapers/index');
 const { exportExcel } = require('./server/exporters/excel');
 const { exportMarkdown } = require('./server/exporters/markdown');
+const { scoreBidOpportunity } = require('./server/ai-scorer');
+const { exportAsXFactJson, pushToXFact } = require('./server/xfact-integration');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -183,6 +185,89 @@ app.get('/api/export/markdown', (req, res) => {
     res.setHeader('Content-Type', 'text/markdown');
     res.setHeader('Content-Disposition', `attachment; filename="HHS_Procurement_Daily_Roundup_${date}.md"`);
     res.send(md);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/opportunities/:id/score — AI bid score for a single opportunity
+app.post('/api/opportunities/:id/score', async (req, res) => {
+  const state = store.getState();
+  const opp = (state.opportunities || []).find(o => o.id === req.params.id);
+  if (!opp) return res.status(404).json({ error: 'Opportunity not found' });
+
+  const apiKey = req.body.anthropic_api_key || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(400).json({ error: 'ANTHROPIC_API_KEY not set' });
+
+  try {
+    const result = await scoreBidOpportunity(opp, { logger: logScan, apiKey });
+    // Persist score back onto the opportunity
+    const updated = (state.opportunities || []).map(o =>
+      o.id === req.params.id
+        ? { ...o, bid_score: result.score, bid_score_data: result }
+        : o
+    );
+    store.setState({ opportunities: updated });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/score/batch — score up to 10 unscored opportunities (async-friendly)
+app.post('/api/score/batch', async (req, res) => {
+  const state = store.getState();
+  const apiKey = req.body.anthropic_api_key || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(400).json({ error: 'ANTHROPIC_API_KEY not set' });
+
+  const unscored = (state.opportunities || [])
+    .filter(o => o.bid_score == null)
+    .slice(0, 10);
+
+  if (unscored.length === 0) return res.json({ scored: 0, message: 'All opportunities already scored' });
+
+  res.json({ started: true, count: unscored.length });
+
+  // Run scoring async after responding
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  for (const opp of unscored) {
+    try {
+      const result = await scoreBidOpportunity(opp, { logger: logScan, apiKey });
+      const current = store.getState();
+      const updated = (current.opportunities || []).map(o =>
+        o.id === opp.id ? { ...o, bid_score: result.score, bid_score_data: result } : o
+      );
+      store.setState({ opportunities: updated });
+    } catch (err) {
+      logScan(`Batch score error for ${opp.id}: ${err.message}`);
+    }
+    await sleep(1000);
+  }
+  logScan(`Batch scoring complete — ${unscored.length} opportunities scored`);
+});
+
+// GET /api/export/xfact — export all opportunities as xFact JSON schema
+app.get('/api/export/xfact', (req, res) => {
+  const state = store.getState();
+  const opps = state.opportunities || [];
+  const date = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="xfact_opportunities_${date}.json"`);
+  res.json(exportAsXFactJson(opps));
+});
+
+// POST /api/xfact/push/:id — push a single opportunity to a live xFact instance
+app.post('/api/xfact/push/:id', async (req, res) => {
+  const state = store.getState();
+  const opp = (state.opportunities || []).find(o => o.id === req.params.id);
+  if (!opp) return res.status(404).json({ error: 'Opportunity not found' });
+
+  const { xfact_api_url } = req.body;
+  if (!xfact_api_url) return res.status(400).json({ error: 'xfact_api_url required in request body' });
+
+  try {
+    const result = await pushToXFact(opp, xfact_api_url);
+    res.json({ pushed: true, result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -409,6 +409,82 @@ a:hover { text-decoration: underline; }
 .detail-section .dg-label { display: block; margin-bottom: 4px; }
 .notes-text { font-size: 0.78rem; color: var(--gray-5); white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
 
+/* ── AI Score Badge ──────────────────────────────────────────────────── */
+.score-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  font-weight: 700; font-size: 0.82rem; color: #fff; cursor: pointer;
+  border: none; flex-shrink: 0;
+}
+.score-badge.sm { width: 22px; height: 22px; font-size: 0.72rem; }
+.score-badge.lg { width: 44px; height: 44px; font-size: 1.2rem; }
+.score-a { background: #1a7a4e; }          /* 9-10 — dark green */
+.score-b { background: #27ae60; }          /* 7-8  — green */
+.score-c { background: #d4700a; }          /* 5-6  — amber */
+.score-d { background: #c0392b; }          /* 1-4  — red */
+
+.btn-score-sm {
+  background: var(--blue-light); border: 1px solid var(--blue-mid);
+  border-radius: 50%; width: 24px; height: 24px;
+  font-size: 0.72rem; cursor: pointer; color: var(--blue-dark);
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0; transition: background .15s;
+}
+.btn-score-sm:hover { background: var(--blue-mid); color: #fff; }
+
+/* ── Recommendation Badge ────────────────────────────────────────────── */
+.rec-badge {
+  padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;
+}
+.rec-go    { background: #d4edda; color: #1a7a4e; }
+.rec-nogo  { background: var(--red-light); color: var(--red); }
+.rec-maybe { background: var(--orange-light); color: var(--orange); }
+
+/* ── AI Scoring & xFact panels ───────────────────────────────────────── */
+.panel-ai   { border-top: 3px solid var(--purple); }
+.panel-xfact { border-top: 3px solid var(--blue-mid); }
+
+.btn-ai {
+  background: var(--purple); color: #fff;
+  border: none; padding: 7px 12px; border-radius: var(--radius);
+  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  transition: background .15s;
+}
+.btn-ai:hover { background: #8e44ad; }
+
+.btn-xfact {
+  background: var(--blue-mid); color: #fff;
+  border: none; padding: 7px 12px; border-radius: var(--radius);
+  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  transition: background .15s;
+}
+.btn-xfact:hover { background: var(--blue-dark); }
+
+/* ── Score Detail Section ────────────────────────────────────────────── */
+.score-section { border-color: var(--purple); }
+.score-section-empty { border-style: dashed; }
+.score-unscored { font-size: 0.78rem; color: var(--gray-4); font-style: italic; }
+.score-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.score-model { font-size: 0.68rem; color: var(--gray-4); }
+.score-rationale { font-size: 0.83rem; color: var(--gray-5); margin-bottom: 0.75rem; line-height: 1.5; }
+
+.score-factors-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin-bottom: 0.75rem; }
+.score-factors-table th { background: var(--gray-2); font-weight: 700; padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+.score-factors-table td { padding: 4px 8px; border-bottom: 1px solid var(--gray-2); vertical-align: top; }
+
+.score-lists { display: flex; gap: 1rem; flex-wrap: wrap; }
+.score-list { flex: 1; min-width: 180px; }
+.score-list strong { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 4px; }
+.score-list ul { padding-left: 1rem; font-size: 0.78rem; color: var(--gray-5); line-height: 1.6; }
+.strengths strong { color: var(--green); }
+.risks strong { color: var(--red); }
+
+/* ── Detail Actions ──────────────────────────────────────────────────── */
+.detail-actions { display: flex; gap: 8px; margin-top: 0.75rem; }
+
+/* ── Score table column ──────────────────────────────────────────────── */
+.col-score { width: 54px; text-align: center; }
+
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .app-body { flex-direction: column; }

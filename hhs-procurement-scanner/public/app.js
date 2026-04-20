@@ -6,6 +6,7 @@ let filteredOpps = [];
 let sortCol = 'urgency';
 let sortDir = 1;
 let logPollInterval = null;
+let currentDetailId = null;
 
 const URGENCY_ORDER = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, WATCH: 4 };
 const WIN_ORDER     = { High: 0, Medium: 1, Low: 2, 'Long Shot': 3 };
@@ -190,7 +191,7 @@ function renderTable() {
   if (!tbody) return;
 
   if (filteredOpps.length === 0) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="11">${
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="12">${
       allOpps.length === 0
         ? 'No opportunities loaded. Run a scan to begin.'
         : 'No results match the current filters.'
@@ -205,7 +206,7 @@ function renderTable() {
     let av = a[sortCol], bv = b[sortCol];
     if (sortCol === 'urgency') { av = URGENCY_ORDER[av] ?? 9; bv = URGENCY_ORDER[bv] ?? 9; }
     else if (sortCol === 'win_probability') { av = WIN_ORDER[av] ?? 9; bv = WIN_ORDER[bv] ?? 9; }
-    else if (sortCol === 'est_value_m') { av = parseFloat(av) || 0; bv = parseFloat(bv) || 0; }
+    else if (sortCol === 'est_value_m' || sortCol === 'bid_score') { av = parseFloat(av) || 0; bv = parseFloat(bv) || 0; }
     if (av < bv) return -sortDir;
     if (av > bv) return sortDir;
     return 0;
@@ -252,14 +253,26 @@ function buildRow(opp) {
     <td class="col-status"><span class="status-badge">${escHtml(opp.status || '')}</span></td>
     <td class="col-apd"><span class="apd-badge apd-${(opp.apd_status||'').toLowerCase().replace(/\s/g,'-')}">${escHtml(opp.apd_status || '?')}</span></td>
     <td class="col-hr1"><span class="hr1-score hr1-${opp.hr1_readiness_score}">${opp.hr1_readiness_score || '?'}</span></td>
+    <td class="col-score">${buildScoreBadge(opp)}</td>
     <td class="col-links">${docLink} ${portalLink}</td>
   </tr>`;
+}
+
+function buildScoreBadge(opp) {
+  if (opp.bid_score == null) {
+    return `<button class="btn-score-sm" onclick="event.stopPropagation(); scoreSingle('${opp.id}')" title="Score with AI">✦</button>`;
+  }
+  const s = opp.bid_score;
+  const rec = opp.bid_score_data?.recommendation || '';
+  const cls = s >= 9 ? 'score-a' : s >= 7 ? 'score-b' : s >= 5 ? 'score-c' : 'score-d';
+  return `<span class="score-badge ${cls}" onclick="event.stopPropagation(); showDetail('${opp.id}')" title="${escAttr(rec)}">${s}</span>`;
 }
 
 // ── Detail Panel ──────────────────────────────────────────────────────────────
 function showDetail(id) {
   const opp = allOpps.find(o => o.id === id);
   if (!opp) return;
+  currentDetailId = id;
 
   const panel = document.getElementById('detailPanel');
   const content = document.getElementById('detailContent');
@@ -317,6 +330,11 @@ function showDetail(id) {
     <div class="detail-section">
       <div class="dg-label">Scraped At</div>
       <div>${escHtml(opp.scraped_at||'')}</div>
+    </div>
+    ${buildScoreSection(opp)}
+    <div class="detail-actions">
+      <button class="btn btn-ai" onclick="scoreSingle('${opp.id}')">✦ AI Score This</button>
+      <button class="btn btn-xfact" onclick="pushSingleToXFact('${opp.id}')">⬆ Push to xFact</button>
     </div>
   `;
 
@@ -377,6 +395,137 @@ function sortBy(col) {
   if (sortCol === col) sortDir *= -1;
   else { sortCol = col; sortDir = 1; }
   renderTable();
+}
+
+// ── AI Scoring ────────────────────────────────────────────────────────────────
+
+function buildScoreSection(opp) {
+  if (!opp.bid_score_data) {
+    return `<div class="detail-section score-section-empty">
+      <div class="dg-label">AI Bid Score</div>
+      <div class="score-unscored">Not yet scored. Click "AI Score This" below.</div>
+    </div>`;
+  }
+  const sd = opp.bid_score_data;
+  const recCls = sd.recommendation === 'GO' ? 'rec-go' : sd.recommendation === 'NO-GO' ? 'rec-nogo' : 'rec-maybe';
+  const scoreCls = sd.score >= 9 ? 'score-a' : sd.score >= 7 ? 'score-b' : sd.score >= 5 ? 'score-c' : 'score-d';
+
+  const factorsHtml = (sd.factors || []).map(f => `
+    <tr>
+      <td>${escHtml(f.name||'')}</td>
+      <td>${f.weight != null ? (f.weight * 100).toFixed(0) + '%' : ''}</td>
+      <td><span class="score-badge ${f.score>=8?'score-b':f.score>=5?'score-c':'score-d'} sm">${f.score}</span></td>
+      <td>${escHtml(f.rationale||'')}</td>
+    </tr>`).join('');
+
+  const riskHtml = (sd.risks || []).map(r => `<li>${escHtml(r)}</li>`).join('');
+  const strengthHtml = (sd.strengths || []).map(s => `<li>${escHtml(s)}</li>`).join('');
+
+  return `<div class="detail-section score-section">
+    <div class="score-header">
+      <span class="score-badge lg ${scoreCls}">${sd.score}</span>
+      <span class="rec-badge ${recCls}">${sd.recommendation}</span>
+      <span class="score-model">${escHtml(sd.model||'')} · ${escHtml(sd.scored_at?.slice(0,10)||'')}</span>
+    </div>
+    <div class="score-rationale">${escHtml(sd.rationale||'')}</div>
+    ${factorsHtml ? `<table class="score-factors-table">
+      <thead><tr><th>Factor</th><th>Weight</th><th>Score</th><th>Rationale</th></tr></thead>
+      <tbody>${factorsHtml}</tbody>
+    </table>` : ''}
+    <div class="score-lists">
+      ${strengthHtml ? `<div class="score-list strengths"><strong>Strengths</strong><ul>${strengthHtml}</ul></div>` : ''}
+      ${riskHtml ? `<div class="score-list risks"><strong>Risks</strong><ul>${riskHtml}</ul></div>` : ''}
+    </div>
+  </div>`;
+}
+
+async function scoreSingle(id) {
+  const apiKey = document.getElementById('anthropicApiKey').value.trim();
+  const scoreBtn = document.getElementById('btnScoreBatch');
+  const scoreStatus = document.getElementById('scoreStatus');
+  if (scoreStatus) scoreStatus.classList.remove('hidden');
+
+  try {
+    const body = {};
+    if (apiKey) body.anthropic_api_key = apiKey;
+
+    const res = await fetch(`/api/opportunities/${id}/score`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.error) { alert(`Score error: ${data.error}`); return; }
+
+    // Refresh data and re-render
+    await loadStatus();
+    if (currentDetailId === id) showDetail(id);
+  } catch (err) {
+    alert(`Score request failed: ${err.message}`);
+  } finally {
+    if (scoreStatus) scoreStatus.classList.add('hidden');
+  }
+}
+
+async function scoreBatch() {
+  const apiKey = document.getElementById('anthropicApiKey').value.trim();
+  const scoreStatus = document.getElementById('scoreStatus');
+  if (scoreStatus) scoreStatus.classList.remove('hidden');
+  document.getElementById('btnScoreBatch').disabled = true;
+
+  try {
+    const body = {};
+    if (apiKey) body.anthropic_api_key = apiKey;
+
+    const res = await fetch('/api/score/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.error) { alert(`Score error: ${data.error}`); return; }
+
+    // Poll until scoring batch is done (server signals via scan log)
+    const wait = n => new Promise(r => setTimeout(r, n));
+    for (let i = 0; i < 60; i++) {
+      await wait(3000);
+      const statusRes = await fetch('/api/status');
+      const status = await statusRes.json();
+      if (!status.scanInProgress) break;
+    }
+    await loadStatus();
+  } catch (err) {
+    alert(`Batch score failed: ${err.message}`);
+  } finally {
+    if (scoreStatus) scoreStatus.classList.add('hidden');
+    document.getElementById('btnScoreBatch').disabled = false;
+  }
+}
+
+// ── xFact Integration ─────────────────────────────────────────────────────────
+
+function downloadXFact() {
+  window.location.href = '/api/export/xfact';
+}
+
+async function pushSingleToXFact(id) {
+  const xfactUrl = document.getElementById('xfactApiUrl').value.trim();
+  if (!xfactUrl) {
+    alert('Enter your xFact API URL in the xFact Integration panel first.');
+    return;
+  }
+  try {
+    const res = await fetch(`/api/xfact/push/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ xfact_api_url: xfactUrl })
+    });
+    const data = await res.json();
+    if (data.error) { alert(`Push error: ${data.error}`); return; }
+    alert('Successfully pushed to xFact!');
+  } catch (err) {
+    alert(`Push failed: ${err.message}`);
+  }
 }
 
 // ── Exports ───────────────────────────────────────────────────────────────────
