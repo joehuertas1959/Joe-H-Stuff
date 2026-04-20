@@ -51,23 +51,23 @@ ${CAPABILITY_PROFILE}
 Return ONLY valid JSON matching this exact schema (no markdown, no explanation):
 {
   "score": <integer 1-10>,
-  "recommendation": <"GO" | "NO-GO" | "MAYBE">,
-  "rationale": <string, 1-2 sentences>,
+  "recommendation": <"go" | "no-go" | "maybe">,
+  "rationale": <string, 2-3 sentence summary>,
   "factors": [
-    { "name": <string>, "weight": <number 0-1>, "score": <integer 1-10>, "rationale": <string> }
+    { "factor": <string>, "assessment": <string>, "impact": <"positive" | "negative" | "neutral"> }
   ],
   "risks": [<string>, ...],
   "strengths": [<string>, ...]
 }
 
-Scoring criteria (weight each 0-1, sum to ~1.0):
-- capability_fit (0.30): How well do xFact core competencies match this work?
-- win_probability (0.25): State signals, incumbent, competitive landscape
-- strategic_value (0.20): HR1 alignment, pipeline impact, recompete potential
-- financial_attractiveness (0.15): Value, FMAP leverage, cost recovery potential
-- execution_risk (0.10): Complexity, timeline, resource requirements (invert: lower risk = higher score)
+Scoring criteria — assess each and assign an impact of positive/negative/neutral:
+- capability_fit: How well do xFact core competencies match this work?
+- win_probability: State signals, incumbent presence, competitive landscape
+- strategic_value: HR1 alignment, pipeline impact, recompete potential
+- financial_attractiveness: Contract value, FMAP leverage, cost recovery potential
+- execution_risk: Complexity, timeline, resource requirements (high risk = negative impact)
 
-Recommendation thresholds: GO ≥ 7, MAYBE 5-6, NO-GO ≤ 4.`;
+Recommendation thresholds: go ≥ 7, maybe 5-6, no-go ≤ 4.`;
 }
 
 async function scoreBidOpportunity(opportunity, { logger = console.log, apiKey } = {}) {
@@ -103,7 +103,7 @@ async function scoreBidOpportunity(opportunity, { logger = console.log, apiKey }
   if (typeof score !== 'number' || score < 1 || score > 10) {
     throw new Error(`Invalid score value: ${score}`);
   }
-  if (!['GO', 'NO-GO', 'MAYBE'].includes(recommendation)) {
+  if (!['go', 'no-go', 'maybe'].includes(recommendation)) {
     throw new Error(`Invalid recommendation: ${recommendation}`);
   }
 

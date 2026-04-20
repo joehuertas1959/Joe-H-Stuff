@@ -407,16 +407,17 @@ function buildScoreSection(opp) {
     </div>`;
   }
   const sd = opp.bid_score_data;
-  const recCls = sd.recommendation === 'GO' ? 'rec-go' : sd.recommendation === 'NO-GO' ? 'rec-nogo' : 'rec-maybe';
+  const recCls = sd.recommendation === 'go' ? 'rec-go' : sd.recommendation === 'no-go' ? 'rec-nogo' : 'rec-maybe';
   const scoreCls = sd.score >= 9 ? 'score-a' : sd.score >= 7 ? 'score-b' : sd.score >= 5 ? 'score-c' : 'score-d';
 
-  const factorsHtml = (sd.factors || []).map(f => `
-    <tr>
-      <td>${escHtml(f.name||'')}</td>
-      <td>${f.weight != null ? (f.weight * 100).toFixed(0) + '%' : ''}</td>
-      <td><span class="score-badge ${f.score>=8?'score-b':f.score>=5?'score-c':'score-d'} sm">${f.score}</span></td>
-      <td>${escHtml(f.rationale||'')}</td>
-    </tr>`).join('');
+  const factorsHtml = (sd.factors || []).map(f => {
+    const impactCls = f.impact === 'positive' ? 'impact-pos' : f.impact === 'negative' ? 'impact-neg' : 'impact-neu';
+    return `<tr>
+      <td>${escHtml(f.factor||'')}</td>
+      <td>${escHtml(f.assessment||'')}</td>
+      <td><span class="impact-badge ${impactCls}">${escHtml(f.impact||'')}</span></td>
+    </tr>`;
+  }).join('');
 
   const riskHtml = (sd.risks || []).map(r => `<li>${escHtml(r)}</li>`).join('');
   const strengthHtml = (sd.strengths || []).map(s => `<li>${escHtml(s)}</li>`).join('');
@@ -424,12 +425,12 @@ function buildScoreSection(opp) {
   return `<div class="detail-section score-section">
     <div class="score-header">
       <span class="score-badge lg ${scoreCls}">${sd.score}</span>
-      <span class="rec-badge ${recCls}">${sd.recommendation}</span>
+      <span class="rec-badge ${recCls}">${sd.recommendation.toUpperCase()}</span>
       <span class="score-model">${escHtml(sd.model||'')} · ${escHtml(sd.scored_at?.slice(0,10)||'')}</span>
     </div>
     <div class="score-rationale">${escHtml(sd.rationale||'')}</div>
     ${factorsHtml ? `<table class="score-factors-table">
-      <thead><tr><th>Factor</th><th>Weight</th><th>Score</th><th>Rationale</th></tr></thead>
+      <thead><tr><th>Factor</th><th>Assessment</th><th>Impact</th></tr></thead>
       <tbody>${factorsHtml}</tbody>
     </table>` : ''}
     <div class="score-lists">

@@ -472,6 +472,13 @@ a:hover { text-decoration: underline; }
 .score-factors-table th { background: var(--gray-2); font-weight: 700; padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--border); }
 .score-factors-table td { padding: 4px 8px; border-bottom: 1px solid var(--gray-2); vertical-align: top; }
 
+.impact-badge {
+  padding: 2px 7px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; text-transform: capitalize;
+}
+.impact-pos { background: var(--green-light); color: var(--green); }
+.impact-neg { background: var(--red-light); color: var(--red); }
+.impact-neu { background: var(--gray-2); color: var(--gray-4); }
+
 .score-lists { display: flex; gap: 1rem; flex-wrap: wrap; }
 .score-list { flex: 1; min-width: 180px; }
 .score-list strong { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 4px; }

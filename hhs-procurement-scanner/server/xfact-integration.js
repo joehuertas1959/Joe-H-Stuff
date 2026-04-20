@@ -4,9 +4,7 @@ const axios = require('axios');
 
 // Map scanner opportunity → xFact §3.2 opportunity schema
 function mapToXFactOpportunity(opp) {
-  const estValueCents = opp.est_value_m > 0
-    ? Math.round(opp.est_value_m * 1_000_000 * 100) // store as cents
-    : null;
+  const estimatedValue = opp.est_value_m > 0 ? `$${opp.est_value_m}M` : null;
 
   return {
     title:            opp.opportunity_title,
@@ -15,7 +13,7 @@ function mapToXFactOpportunity(opp) {
     status:           'pending',
     documentId:       null,
     dueDate:          opp.due_date !== 'TBD' ? opp.due_date : null,
-    estimatedValue:   estValueCents,
+    estimatedValue,
     bidScore:         opp.bid_score ?? null,
     bidScoreData:     opp.bid_score_data ? JSON.stringify(opp.bid_score_data) : null,
     outcome:          null,
