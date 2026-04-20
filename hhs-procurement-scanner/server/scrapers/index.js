@@ -1,29 +1,41 @@
 'use strict';
 
-const samGov      = require('./sam-gov');
-const usaSpending = require('./usaspending');
-const oigWorkplan = require('./oig-workplan');
-const cmsApd      = require('./cms-apd');
-const tenncare    = require('./tenncare');
-const virginia    = require('./virginia');
-const oklahoma    = require('./oklahoma');
-const iowa        = require('./iowa');
+const samGov            = require('./sam-gov');
+const usaSpending       = require('./usaspending');
+const oigWorkplan       = require('./oig-workplan');
+const cmsApd            = require('./cms-apd');
+const tenncare          = require('./tenncare');
+const virginia          = require('./virginia');
+const oklahoma          = require('./oklahoma');
+const iowa              = require('./iowa');
+const nevada            = require('./nevada');
+const nebraska          = require('./nebraska');
+const hawaii            = require('./hawaii');
+const illinois          = require('./illinois');
+const stateHealthPortals = require('./state-health-portals');
+const hmaRoundup        = require('./hma-roundup');
 
 // ── Source-to-tier mapping ───────────────────────────────────────────────────
-// Tier 1 — Daily: dedicated state HHS portals
-// Tier 2 — Daily/Weekly: state eProcurement + CMS APD
-// Tier 3 — Weekly: SAM.gov + USASpending.gov
-// Tier 4 — Monthly: OIG Work Plan
+// Tier 1 — Daily:   TennCare, VA DMAS, OK OHCA, Nevada, Nebraska, Hawaii, Illinois
+// Tier 2 — Weekly:  Iowa DAS, CMS APD, State Health Portals (12 states), HMA Roundup
+// Tier 3 — Weekly:  SAM.gov, USASpending.gov
+// Tier 4 — Monthly: HHS OIG Work Plan
 
 const SOURCES = {
   tier1: [
-    { name: 'TennCare',       fn: tenncare.scrape    },
-    { name: 'Virginia DMAS',  fn: virginia.scrape    },
-    { name: 'Oklahoma OHCA',  fn: oklahoma.scrape    }
+    { name: 'TennCare',           fn: tenncare.scrape          },
+    { name: 'Virginia DMAS',      fn: virginia.scrape          },
+    { name: 'Oklahoma OHCA',      fn: oklahoma.scrape          },
+    { name: 'Nevada NEVADAePro',  fn: nevada.scrape            },
+    { name: 'Nebraska DHHS',      fn: nebraska.scrape          },
+    { name: 'Hawaii Med-QUEST',   fn: hawaii.scrape            },
+    { name: 'Illinois HFS',       fn: illinois.scrape          }
   ],
   tier2: [
-    { name: 'Iowa DAS',       fn: iowa.scrape        },
-    { name: 'CMS APD',        fn: cmsApd.scrape      }
+    { name: 'Iowa DAS',               fn: iowa.scrape              },
+    { name: 'CMS APD',                fn: cmsApd.scrape            },
+    { name: 'State Health Portals',   fn: stateHealthPortals.scrape },
+    { name: 'HMA Weekly Roundup',     fn: hmaRoundup.scrape        }
   ],
   tier3: [
     { name: 'SAM.gov',        fn: samGov.scrape      },
