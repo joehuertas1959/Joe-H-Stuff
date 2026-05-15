@@ -142,6 +142,21 @@
         </div>
       </section>
 
+      <section class="panel panel-exclusions">
+        <h3 class="panel-title">Title Exclusions
+          <span class="exclusion-count" id="exclusionCount"></span>
+        </h3>
+        <div class="exclusion-add-row">
+          <input type="text" id="exclusionInput" placeholder="Word or phrase to exclude…"
+            onkeydown="if(event.key==='Enter') addExclusion()" />
+          <button class="btn btn-sm btn-add-excl" onclick="addExclusion()">Add</button>
+        </div>
+        <div class="field-hint">Any opportunity whose title contains an excluded phrase will be hidden from results.</div>
+        <div id="exclusionList" class="exclusion-list">
+          <div class="excl-empty">No exclusions set.</div>
+        </div>
+      </section>
+
       <section class="panel">
         <h3 class="panel-title">Scan Log</h3>
         <div id="scanLog" class="scan-log">
