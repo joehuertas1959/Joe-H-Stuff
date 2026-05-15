@@ -41,6 +41,13 @@ const ctDss             = require('./ct-dss');
 const nhDhhs            = require('./nh-dhhs');
 const orOha             = require('./or-oha');
 const gaDch             = require('./ga-dch');
+// New v5.6 portals
+const alMedicaid        = require('./al-medicaid');
+const msMedicaid        = require('./ms-medicaid');
+const wvDhhr            = require('./wv-dhhr');
+const mtDphhs           = require('./mt-dphhs');
+const riEohhs           = require('./ri-eohhs');
+const arDhs             = require('./ar-dhs');
 
 const SOURCES = {
   tier1: [
@@ -77,6 +84,12 @@ const SOURCES = {
     { name: 'New Hampshire DHHS',     fn: nhDhhs.scrape },
     { name: 'Oregon OHA',             fn: orOha.scrape },
     { name: 'Georgia DCH',            fn: gaDch.scrape },
+    { name: 'Alabama Medicaid',       fn: alMedicaid.scrape },
+    { name: 'Mississippi DOM',        fn: msMedicaid.scrape },
+    { name: 'West Virginia DHHR',     fn: wvDhhr.scrape },
+    { name: 'Montana DPHHS',          fn: mtDphhs.scrape },
+    { name: 'Rhode Island EOHHS',     fn: riEohhs.scrape },
+    { name: 'Arkansas DHS',           fn: arDhs.scrape },
   ],
   tier2: [
     { name: 'Iowa DAS',              fn: iowa.scrape },

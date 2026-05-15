@@ -21,7 +21,11 @@ const STATE_HR1_SCORES = {
   WI: { score: 3, expansion: false, systemVintage: 'Mixed',         keyFactor: 'Non-expansion; legacy MMIS',                           bdPriority: 'MEDIUM' },
   TX: { score: 2, expansion: false, systemVintage: 'Legacy mixed',  keyFactor: 'Large ABAWD pop.; non-expansion; Accenture incumbent',  bdPriority: 'HIGH' },
   NY: { score: 4, expansion: true,  systemVintage: 'Modern',        keyFactor: 'eMedNY; large but well-funded',                        bdPriority: 'LOW' },
-  CA: { score: 4, expansion: true,  systemVintage: 'Modernizing',   keyFactor: 'CARES active DDI; large vendor relationships',         bdPriority: 'LOW' }
+  CA: { score: 4, expansion: true,  systemVintage: 'Modernizing',   keyFactor: 'CARES active DDI; large vendor relationships',         bdPriority: 'LOW' },
+  AL: { score: 2, expansion: false, systemVintage: 'Legacy',        keyFactor: 'Non-expansion; aging MMIS; H.R. 1 CE exposure high',   bdPriority: 'HIGH' },
+  MS: { score: 2, expansion: false, systemVintage: 'Legacy',        keyFactor: 'Highest FMAP nation; non-expansion; legacy systems',   bdPriority: 'HIGH' },
+  WV: { score: 3, expansion: true,  systemVintage: 'Mixed',         keyFactor: 'Expansion state; legacy eligibility; CE modernization', bdPriority: 'MEDIUM' },
+  RI: { score: 1, expansion: true,  systemVintage: 'Legacy',        keyFactor: 'Class-action suits; systemic failures',                bdPriority: 'HIGHEST' }
 };
 
 // Default score for unlisted states
