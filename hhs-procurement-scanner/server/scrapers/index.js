@@ -41,6 +41,13 @@ const ctDss             = require('./ct-dss');
 const nhDhhs            = require('./nh-dhhs');
 const orOha             = require('./or-oha');
 const gaDch             = require('./ga-dch');
+// New v5.6 portals
+const alMedicaid        = require('./al-medicaid');
+const msMedicaid        = require('./ms-medicaid');
+const wvDhhr            = require('./wv-dhhr');
+const mtDphhs           = require('./mt-dphhs');
+const riEohhs           = require('./ri-eohhs');
+const arDhs             = require('./ar-dhs');
 
 const SOURCES = {
   tier1: [
@@ -77,6 +84,12 @@ const SOURCES = {
     { name: 'New Hampshire DHHS',     fn: nhDhhs.scrape },
     { name: 'Oregon OHA',             fn: orOha.scrape },
     { name: 'Georgia DCH',            fn: gaDch.scrape },
+    { name: 'Alabama Medicaid',       fn: alMedicaid.scrape },
+    { name: 'Mississippi DOM',        fn: msMedicaid.scrape },
+    { name: 'West Virginia DHHR',     fn: wvDhhr.scrape },
+    { name: 'Montana DPHHS',          fn: mtDphhs.scrape },
+    { name: 'Rhode Island EOHHS',     fn: riEohhs.scrape },
+    { name: 'Arkansas DHS',           fn: arDhs.scrape },
   ],
   tier2: [
     { name: 'Iowa DAS',              fn: iowa.scrape },
@@ -161,30 +174,17 @@ async function runScan({ tier = 'all', sam_api_key, logger = console.log } = {})
   }
 
   // Apply exclusion criteria (PROMPTJH v5.5, Section 6.3)
-  const filtered = applyExclusionCriteria(allResults, logger);
+  const filtered = applyExclusionCriteria(allResults, logger, opts.exclusionPhrases || []);
   logger(`\nTotal after exclusion filter: ${filtered.length} / ${allResults.length}`);
 
   return filtered;
 }
 
-function applyExclusionCriteria(results, logger) {
+function applyExclusionCriteria(results, logger, dynamicExclusions = []) {
   const excluded = [];
 
-  // Non-IT Medicaid exclusions (v5.5 expanded list)
-  const NON_IT_EXCLUDE = [
-    'managed care organization', 'mco contract', 'provider rate',
-    'pharmacy benefit', 'drug rebate', 'beneficiary advisory',
-    'advisory committee', 'public notice', 'public meeting',
-    'waiver amendment', 'state plan amendment', 'annual report',
-    'provider manual', 'member handbook', 'applying for medicaid',
-    'news release', 'press release', 'request for applications',
-    'notice of funding', 'grant funding', 'cooperative agreement',
-    'elevator maintenance', 'janitorial', 'grounds maintenance',
-    'food service', 'linen service',
-    'medical physicist', 'physician services', 'nursing services',
-    'dental services', 'clinical staffing', 'locum tenens',
-    'tractor tire', 'dry ice', 'waste tire',
-  ];
+  // Merge store-managed exclusion phrases with any extra passed in
+  const NON_IT_EXCLUDE = dynamicExclusions.map(p => p.toLowerCase());
 
   const kept = results.filter(r => {
     // Exclude < $500K (unless est_value_m is 0 = unknown)

@@ -143,17 +143,24 @@
       </section>
 
       <section class="panel panel-exclusions">
-        <h3 class="panel-title">Title Exclusions
+        <h3 class="panel-title">Exclusion List
           <span class="exclusion-count" id="exclusionCount"></span>
         </h3>
         <div class="exclusion-add-row">
           <input type="text" id="exclusionInput" placeholder="Word or phrase to exclude…"
             onkeydown="if(event.key==='Enter') addExclusion()" />
-          <button class="btn btn-sm btn-add-excl" onclick="addExclusion()">Add</button>
+          <button class="btn btn-sm btn-add-excl" onclick="addExclusion()">+ Add</button>
         </div>
-        <div class="field-hint">Any opportunity whose title contains an excluded phrase will be hidden from results.</div>
+        <div class="field-hint">Titles containing any listed phrase are hidden from results and excluded at scan time.</div>
+        <div class="excl-toolbar" id="exclToolbar" style="display:none;">
+          <label class="excl-select-all">
+            <input type="checkbox" id="exclSelectAll" onchange="toggleSelectAllExclusions(this.checked)" />
+            Select all
+          </label>
+          <button class="btn btn-sm btn-excl-remove-sel" id="btnRemoveSelected" onclick="removeSelectedExclusions()">Remove Selected</button>
+        </div>
         <div id="exclusionList" class="exclusion-list">
-          <div class="excl-empty">No exclusions set.</div>
+          <div class="excl-empty">Loading…</div>
         </div>
       </section>
 
@@ -174,6 +181,12 @@
           <div class="source-item tier1"><span class="tier-dot t1"></span> Nebraska DHHS (NE)</div>
           <div class="source-item tier1"><span class="tier-dot t1"></span> Hawaii Med-QUEST (HI)</div>
           <div class="source-item tier1"><span class="tier-dot t1"></span> Illinois HFS (IL)</div>
+          <div class="source-item tier1"><span class="tier-dot t1"></span> Alabama Medicaid (AL)</div>
+          <div class="source-item tier1"><span class="tier-dot t1"></span> Mississippi DOM (MS)</div>
+          <div class="source-item tier1"><span class="tier-dot t1"></span> West Virginia DHHR (WV)</div>
+          <div class="source-item tier1"><span class="tier-dot t1"></span> Montana DPHHS (MT)</div>
+          <div class="source-item tier1"><span class="tier-dot t1"></span> Rhode Island EOHHS (RI)</div>
+          <div class="source-item tier1"><span class="tier-dot t1"></span> Arkansas DHS (AR)</div>
           <div class="source-item tier2"><span class="tier-dot t2"></span> Iowa DAS (IA)</div>
           <div class="source-item tier2"><span class="tier-dot t2"></span> CMS APD Database</div>
           <div class="source-item tier2"><span class="tier-dot t2"></span> State Health Portals (12 states)</div>

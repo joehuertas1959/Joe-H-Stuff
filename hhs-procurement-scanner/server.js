@@ -172,7 +172,8 @@ app.post('/api/scan', async (req, res) => {
   res.json({ started: true, tier });
 
   try {
-    const results = await runScan({ tier, sam_api_key, logger: logScan });
+    const exclusionPhrases = (store.getState().exclusions || []).map(e => e.phrase);
+    const results = await runScan({ tier, sam_api_key, logger: logScan, exclusionPhrases });
     const state = store.getState();
     const existing = state.opportunities || [];
 

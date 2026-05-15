@@ -5,6 +5,59 @@ const { classifyOpportunity, classifyProgramArea, calcUrgency, calcDaysRemaining
 
 const SAM_BASE = 'https://api.sam.gov/opportunities/v2/search';
 
+// Agencies that are definitively NOT HHS-program-related
+const NON_HHS_AGENCY_PATTERNS = [
+  'dept of defense', 'department of defense', 'dod ',
+  'dept of the navy', 'dept of the army', 'dept of the air force',
+  'naval', 'navsup', 'navair', 'navsea', 'navfac',
+  'army', 'air force', 'marine corps', 'coast guard',
+  'defense logistics', 'defense contract', 'defense information',
+  'defense finance', 'defense health', // DHA is actually HHS-adjacent but not state Medicaid
+  'corps of engineers', 'national guard',
+  'dept of energy', 'department of energy',
+  'dept of transportation', 'department of transportation',
+  'dept of commerce', 'department of commerce',
+  'dept of interior', 'department of the interior',
+  'dept of agriculture',   // USDA SNAP handled separately
+  'dept of justice', 'department of justice',
+  'dept of treasury', 'department of the treasury',
+  'dept of state', 'department of state',
+  'nasa ', 'national aeronautics',
+  'veterans affairs',  // VA is separate from HHS Medicaid programs
+  'gsa ', 'general services administration',
+  'federal bureau of investigation',
+];
+
+// Terms that confirm HHS-program relevance — at least one must appear
+const HHS_RELEVANCE_TERMS = [
+  'medicaid', 'medicare', 'chip', 'schip',
+  'snap', 'food stamps', 'supplemental nutrition',
+  'tanf', 'temporary assistance', 'cash assistance',
+  'hhs', 'cms ', 'centers for medicare', 'center for medicare',
+  'health and human services', 'human services',
+  'hhsc', 'dhhs', 'dhs ', 'department of health',
+  'mmis', 'msis', 'eligibility system', 'enrollment system',
+  'benefits system', 'benefits eligibility',
+  'managed care', 'mco ', 'capitation',
+  'foster care', 'child welfare', 'child support',
+  'iv-e', 'iv-d', 'iv-a', 'liheap',
+  'social services', 'public assistance',
+  'apd ', 'advance planning document',
+  'fhir', 'interoperability', 'hl7',
+  'medicaid enterprise', 'mes ', 'mes-',
+];
+
+function isHHSRelevant(title, description, agencyPath) {
+  const text = (title + ' ' + description + ' ' + agencyPath).toLowerCase();
+
+  // Reject if agency is clearly non-HHS
+  if (NON_HHS_AGENCY_PATTERNS.some(p => text.includes(p))) return false;
+
+  // Accept only if at least one HHS-program term appears in title or description
+  const content = (title + ' ' + description).toLowerCase();
+  return HHS_RELEVANCE_TERMS.some(t => content.includes(t));
+}
+
 // Keyword sets per PROMPTJH v4.0, Sections 7.4–7.6
 const SEARCH_SETS = [
   { label: 'Medicaid-MES',  keywords: 'Medicaid information technology eligibility enrollment MMIS' },
@@ -51,12 +104,18 @@ async function scrape({ api_key = 'DEMO_KEY', logger = console.log } = {}) {
       });
 
       const opps = resp.data?.opportunitiesData || [];
-      logger(`SAM.gov [${set.label}]: ${opps.length} results`);
+      logger(`SAM.gov [${set.label}]: ${opps.length} raw results`);
 
+      let skipped = 0;
       for (const opp of opps) {
         const title = opp.title || '';
         const rfpNum = opp.solicitationNumber || 'N/A';
         const state = opp.placeOfPerformance?.state?.code?.toUpperCase() || '';
+        const agencyPath = opp.fullParentPathName || '';
+        const descText = opp.description || agencyPath;
+
+        // Filter out non-HHS agencies and irrelevant content
+        if (!isHHSRelevant(title, descText, agencyPath)) { skipped++; continue; }
 
         // De-duplicate by solicitation number + state
         const dedupKey = `${state}|${rfpNum}|${title.slice(0, 30)}`.toLowerCase();
@@ -69,7 +128,6 @@ async function scrape({ api_key = 'DEMO_KEY', logger = console.log } = {}) {
         const dueDate = responseDeadLine ? responseDeadLine.slice(0, 10) : 'TBD';
 
         // Classify
-        const descText = opp.description || opp.fullParentPathName || '';
         const { category, program_area, program, itType } = classifyOpportunity(title, descText);
 
         // URLs
@@ -119,6 +177,8 @@ async function scrape({ api_key = 'DEMO_KEY', logger = console.log } = {}) {
           scraped_at: new Date().toISOString()
         });
       }
+
+      if (skipped > 0) logger(`SAM.gov [${set.label}]: skipped ${skipped} non-HHS results`);
 
       // Rate-limit between keyword sets
       await sleep(1500);
