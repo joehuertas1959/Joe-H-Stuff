@@ -551,7 +551,7 @@ async function clearData() {
   document.getElementById('scanLog').innerHTML = '<div class="log-empty">Run a scan to see live log output.</div>';
 }
 
-// ── Title Exclusions ──────────────────────────────────────────────────────────
+// ── Exclusion List ────────────────────────────────────────────────────────────
 
 async function loadExclusions() {
   try {
@@ -579,50 +579,91 @@ async function addExclusion() {
     if (data.error) { alert(data.error); return; }
     input.value = '';
     await loadExclusions();
-    // Re-fetch opportunities with new exclusion applied
     await loadStatus();
   } catch (err) {
     alert(`Failed to add exclusion: ${err.message}`);
   }
 }
 
-async function removeExclusion(phrase) {
-  try {
-    const res = await fetch('/api/exclusions', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phrase })
-    });
-    const data = await res.json();
-    if (data.error) { alert(data.error); return; }
-    await loadExclusions();
-    // Re-fetch opportunities so removed exclusion lets items back through
-    await loadStatus();
-  } catch (err) {
-    alert(`Failed to remove exclusion: ${err.message}`);
+async function removeSelectedExclusions() {
+  const checked = document.querySelectorAll('#exclusionList input[type="checkbox"]:checked');
+  const phrases = Array.from(checked).map(cb => cb.dataset.phrase);
+  if (phrases.length === 0) return;
+
+  for (const phrase of phrases) {
+    try {
+      const res = await fetch('/api/exclusions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phrase })
+      });
+      const data = await res.json();
+      if (data.error) console.warn(`Could not remove "${phrase}":`, data.error);
+    } catch (err) {
+      console.error(`Failed to remove "${phrase}":`, err.message);
+    }
   }
+
+  await loadExclusions();
+  await loadStatus();
+}
+
+function toggleSelectAllExclusions(checked) {
+  document.querySelectorAll('#exclusionList input[type="checkbox"]')
+    .forEach(cb => { cb.checked = checked; });
+  updateRemoveSelectedBtn();
+}
+
+function updateRemoveSelectedBtn() {
+  const any = document.querySelectorAll('#exclusionList input[type="checkbox"]:checked').length > 0;
+  const btn = document.getElementById('btnRemoveSelected');
+  if (btn) btn.disabled = !any;
 }
 
 function renderExclusionList() {
   const listEl = document.getElementById('exclusionList');
   const countEl = document.getElementById('exclusionCount');
+  const toolbar = document.getElementById('exclToolbar');
+  const selectAll = document.getElementById('exclSelectAll');
   if (!listEl) return;
 
-  if (countEl) {
-    countEl.textContent = exclusions.length > 0 ? `(${exclusions.length})` : '';
-  }
+  if (countEl) countEl.textContent = exclusions.length > 0 ? `(${exclusions.length})` : '';
 
   if (exclusions.length === 0) {
     listEl.innerHTML = '<div class="excl-empty">No exclusions set.</div>';
+    if (toolbar) toolbar.style.display = 'none';
     return;
   }
 
-  listEl.innerHTML = exclusions.map(e => `
-    <div class="excl-row">
-      <span class="excl-phrase" title="Added ${escHtml(e.added_at?.slice(0,10) || '')}">${escHtml(e.phrase)}</span>
-      <button class="btn-excl-remove" onclick="removeExclusion('${escAttr(e.phrase)}')" title="Remove exclusion">✕</button>
-    </div>
-  `).join('');
+  if (toolbar) toolbar.style.display = 'flex';
+  if (selectAll) selectAll.checked = false;
+
+  const builtIn  = exclusions.filter(e => e.built_in);
+  const custom   = exclusions.filter(e => !e.built_in);
+
+  const renderRow = (e) => {
+    const rowCls = e.built_in ? '' : ' user-added';
+    const tag    = e.built_in
+      ? '<span class="excl-tag excl-tag-builtin">built-in</span>'
+      : '<span class="excl-tag excl-tag-custom">custom</span>';
+    const added  = e.added_at ? e.added_at.slice(0, 10) : '';
+    return `
+      <div class="excl-row${rowCls}">
+        <input type="checkbox" data-phrase="${escAttr(e.phrase)}"
+          title="Select to remove" onchange="updateRemoveSelectedBtn()" />
+        <span class="excl-phrase" title="Added ${escHtml(added)}">${escHtml(e.phrase)}</span>
+        ${tag}
+      </div>`;
+  };
+
+  let html = '';
+  if (custom.length > 0) {
+    html += custom.map(renderRow).join('');
+    if (builtIn.length > 0) html += '<div class="excl-divider"></div>';
+  }
+  html += builtIn.map(renderRow).join('');
+  listEl.innerHTML = html;
+  updateRemoveSelectedBtn();
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
