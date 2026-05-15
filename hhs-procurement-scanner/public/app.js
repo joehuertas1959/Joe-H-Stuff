@@ -7,6 +7,7 @@ let sortCol = 'urgency';
 let sortDir = 1;
 let logPollInterval = null;
 let currentDetailId = null;
+let exclusions = []; // [{ phrase, added_at }]
 
 const URGENCY_ORDER = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, WATCH: 4 };
 const WIN_ORDER     = { High: 0, Medium: 1, Low: 2, 'Long Shot': 3 };
@@ -15,6 +16,7 @@ const WIN_ORDER     = { High: 0, Medium: 1, Low: 2, 'Long Shot': 3 };
 window.addEventListener('DOMContentLoaded', () => {
   updateCountdown();
   loadStatus();
+  loadExclusions();
   setInterval(updateCountdown, 3600000); // refresh countdown hourly
 });
 
@@ -547,6 +549,80 @@ async function clearData() {
   updateKPIs({});
   document.getElementById('lastScanInfo').innerHTML = '';
   document.getElementById('scanLog').innerHTML = '<div class="log-empty">Run a scan to see live log output.</div>';
+}
+
+// ── Title Exclusions ──────────────────────────────────────────────────────────
+
+async function loadExclusions() {
+  try {
+    const res = await fetch('/api/exclusions');
+    const data = await res.json();
+    exclusions = data.exclusions || [];
+    renderExclusionList();
+  } catch (err) {
+    console.error('Failed to load exclusions:', err);
+  }
+}
+
+async function addExclusion() {
+  const input = document.getElementById('exclusionInput');
+  const phrase = (input.value || '').trim();
+  if (!phrase) return;
+
+  try {
+    const res = await fetch('/api/exclusions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phrase })
+    });
+    const data = await res.json();
+    if (data.error) { alert(data.error); return; }
+    input.value = '';
+    await loadExclusions();
+    // Re-fetch opportunities with new exclusion applied
+    await loadStatus();
+  } catch (err) {
+    alert(`Failed to add exclusion: ${err.message}`);
+  }
+}
+
+async function removeExclusion(phrase) {
+  try {
+    const res = await fetch('/api/exclusions', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phrase })
+    });
+    const data = await res.json();
+    if (data.error) { alert(data.error); return; }
+    await loadExclusions();
+    // Re-fetch opportunities so removed exclusion lets items back through
+    await loadStatus();
+  } catch (err) {
+    alert(`Failed to remove exclusion: ${err.message}`);
+  }
+}
+
+function renderExclusionList() {
+  const listEl = document.getElementById('exclusionList');
+  const countEl = document.getElementById('exclusionCount');
+  if (!listEl) return;
+
+  if (countEl) {
+    countEl.textContent = exclusions.length > 0 ? `(${exclusions.length})` : '';
+  }
+
+  if (exclusions.length === 0) {
+    listEl.innerHTML = '<div class="excl-empty">No exclusions set.</div>';
+    return;
+  }
+
+  listEl.innerHTML = exclusions.map(e => `
+    <div class="excl-row">
+      <span class="excl-phrase" title="Added ${escHtml(e.added_at?.slice(0,10) || '')}">${escHtml(e.phrase)}</span>
+      <button class="btn-excl-remove" onclick="removeExclusion('${escAttr(e.phrase)}')" title="Remove exclusion">✕</button>
+    </div>
+  `).join('');
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────

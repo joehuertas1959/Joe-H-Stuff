@@ -1,7 +1,7 @@
 'use strict';
 
 const axios = require('axios');
-const { classifyOpportunity, calcUrgency, calcDaysRemaining, calcWinProbability, getHR1Score, getRegion, getFMAP, makeId } = require('./reference-data');
+const { classifyOpportunity, classifyProgramArea, calcUrgency, calcDaysRemaining, calcWinProbability, getHR1Score, getRegion, getFMAP, makeId } = require('./reference-data');
 
 const SAM_BASE = 'https://api.sam.gov/opportunities/v2/search';
 
@@ -12,7 +12,10 @@ const SEARCH_SETS = [
   { label: 'COOP',          keywords: 'continuity of operations business continuity disaster recovery health human services' },
   { label: 'ERM-GRC',       keywords: 'enterprise risk management GRC governance risk compliance health Medicaid' },
   { label: 'IT-Audit',      keywords: 'IT audit MARS-E NIST 800-53 HIPAA security assessment Medicaid' },
-  { label: 'FHIR-Interop',  keywords: 'FHIR interoperability CMS-0057 API gateway Medicaid' }
+  { label: 'FHIR-Interop',  keywords: 'FHIR interoperability CMS-0057 API gateway Medicaid' },
+  { label: 'MMIS',          keywords: 'MMIS Medicaid Management Information System modernization CMS' },
+  { label: 'Eligibility',   keywords: 'eligibility system benefits modernization SNAP TANF Medicaid determination' },
+  { label: 'ManagedCare',   keywords: 'managed care organization Medicaid MCO capitation health plan IT system' },
 ];
 
 // Focus states (Tier 1 top-20, Section 3.4)
@@ -67,7 +70,7 @@ async function scrape({ api_key = 'DEMO_KEY', logger = console.log } = {}) {
 
         // Classify
         const descText = opp.description || opp.fullParentPathName || '';
-        const { category, program, itType } = classifyOpportunity(title, descText);
+        const { category, program_area, program, itType } = classifyOpportunity(title, descText);
 
         // URLs
         const portalUrl = opp.uiLink || `https://sam.gov/opp/${opp.noticeId}/view`;
@@ -92,6 +95,7 @@ async function scrape({ api_key = 'DEMO_KEY', logger = console.log } = {}) {
           opportunity_title: title,
           rfp_rfi_number: rfpNum,
           category,
+          program_area: classifyOpportunity(title, opp.description || '').program_area,
           program,
           it_type: itType,
           status: mapSamStatus(opp.type, opp.baseType),

@@ -3,10 +3,10 @@
 const XLSX = require('xlsx');
 const { STATE_HR1_SCORES } = require('../scrapers/reference-data');
 
-// PROMPTJH v4.0 — 24-column schema (Section 5.1)
+// PROMPTJH v5.5 — 25-column schema (Section 5.1)
 const COLUMNS = [
   'State', 'Region', 'Agency', 'Opportunity_Title', 'RFP_RFI_Number',
-  'Category', 'Program', 'IT_Type', 'Status', 'Published_Date',
+  'Category', 'Program_Area', 'Program', 'IT_Type', 'Status', 'Published_Date',
   'Due_Date', 'Days_Remaining', 'Est_Value_M', 'Beneficiaries', 'FMAP',
   'Urgency', 'Document_URL', 'Portal_URL', 'Notes',
   'Win_Probability', 'Competitive_Context', 'APD_Status', 'Incumbent_Expiry', 'HR1_Readiness_Score'
@@ -19,6 +19,7 @@ const FIELD_MAP = {
   Opportunity_Title:   'opportunity_title',
   RFP_RFI_Number:      'rfp_rfi_number',
   Category:            'category',
+  Program_Area:        'program_area',
   Program:             'program',
   IT_Type:             'it_type',
   Status:              'status',
@@ -217,7 +218,7 @@ function styleSheet(ws, dataRows) {
   // Set column widths
   ws['!cols'] = [
     { wch: 6 }, { wch: 12 }, { wch: 28 }, { wch: 50 }, { wch: 16 },
-    { wch: 20 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
+    { wch: 20 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
     { wch: 12 }, { wch: 8 },  { wch: 10 }, { wch: 12 }, { wch: 8 },
     { wch: 10 }, { wch: 60 }, { wch: 60 }, { wch: 60 },
     { wch: 14 }, { wch: 40 }, { wch: 14 }, { wch: 14 }, { wch: 8 }

@@ -9,7 +9,8 @@ const DEFAULT_STATE = {
   opportunities: [],
   last_scan: null,
   confirmed_unchanged: [],
-  prompt_improvement_flags: []
+  prompt_improvement_flags: [],
+  exclusions: []
 };
 
 let _state = null;

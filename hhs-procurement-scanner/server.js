@@ -45,6 +45,15 @@ app.get('/api/status', (req, res) => {
 app.get('/api/opportunities', (req, res) => {
   const state = store.getState();
   let opps = state.opportunities || [];
+  const exclusions = (state.exclusions || []).map(e => e.phrase.toLowerCase());
+
+  // Apply title exclusion filter
+  if (exclusions.length > 0) {
+    opps = opps.filter(o => {
+      const title = (o.opportunity_title || '').toLowerCase();
+      return !exclusions.some(phrase => title.includes(phrase));
+    });
+  }
 
   const { state: stateFilter, category, urgency, win_probability, status, q } = req.query;
   if (stateFilter) opps = opps.filter(o => o.state === stateFilter.toUpperCase());
@@ -62,6 +71,40 @@ app.get('/api/opportunities', (req, res) => {
   }
 
   res.json({ total: opps.length, opportunities: opps });
+});
+
+// GET /api/exclusions
+app.get('/api/exclusions', (req, res) => {
+  const state = store.getState();
+  res.json({ exclusions: state.exclusions || [] });
+});
+
+// POST /api/exclusions — body: { phrase: "..." }
+app.post('/api/exclusions', (req, res) => {
+  const phrase = (req.body.phrase || '').trim();
+  if (!phrase) return res.status(400).json({ error: 'phrase is required' });
+  const state = store.getState();
+  const exclusions = state.exclusions || [];
+  if (exclusions.some(e => e.phrase.toLowerCase() === phrase.toLowerCase())) {
+    return res.status(409).json({ error: 'Phrase already in exclusion list' });
+  }
+  exclusions.push({ phrase, added_at: new Date().toISOString() });
+  store.setState({ exclusions });
+  res.json({ added: true, phrase, total: exclusions.length });
+});
+
+// DELETE /api/exclusions — body: { phrase: "..." }
+app.delete('/api/exclusions', (req, res) => {
+  const phrase = (req.body.phrase || '').trim();
+  if (!phrase) return res.status(400).json({ error: 'phrase is required' });
+  const state = store.getState();
+  const before = (state.exclusions || []).length;
+  const exclusions = (state.exclusions || []).filter(
+    e => e.phrase.toLowerCase() !== phrase.toLowerCase()
+  );
+  if (exclusions.length === before) return res.status(404).json({ error: 'Phrase not found' });
+  store.setState({ exclusions });
+  res.json({ removed: true, phrase, total: exclusions.length });
 });
 
 // GET /api/pipeline-summary
