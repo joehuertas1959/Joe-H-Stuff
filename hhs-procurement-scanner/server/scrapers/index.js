@@ -14,6 +14,7 @@ const hawaii            = require('./hawaii');
 const illinois          = require('./illinois');
 const stateHealthPortals = require('./state-health-portals');
 const hmaRoundup        = require('./hma-roundup');
+const bidnet            = require('./bidnet');
 
 // ── Source-to-tier mapping ───────────────────────────────────────────────────
 // Tier 1 — Daily:   TennCare, VA DMAS, OK OHCA, Nevada, Nebraska, Hawaii, Illinois
@@ -35,7 +36,8 @@ const SOURCES = {
     { name: 'Iowa DAS',               fn: iowa.scrape              },
     { name: 'CMS APD',                fn: cmsApd.scrape            },
     { name: 'State Health Portals',   fn: stateHealthPortals.scrape },
-    { name: 'HMA Weekly Roundup',     fn: hmaRoundup.scrape        }
+    { name: 'HMA Weekly Roundup',     fn: hmaRoundup.scrape        },
+    { name: 'BidNet Direct',          fn: bidnet.scrape            }
   ],
   tier3: [
     { name: 'SAM.gov',        fn: samGov.scrape      },
@@ -114,15 +116,45 @@ async function runScan({ tier = 'all', sam_api_key, logger = console.log } = {})
   }
 
   // Apply exclusion criteria (PROMPTJH v4.0, Section 6.3)
-  const filtered = applyExclusionCriteria(allResults, logger);
+  const normalized = normalizeUrls(allResults);
+  const filtered = applyExclusionCriteria(normalized, logger);
   logger(`\nTotal after exclusion filter: ${filtered.length} / ${allResults.length}`);
 
   return filtered;
 }
 
+function normalizeUrls(results) {
+  for (const r of results) {
+    // Replace NOT_FOUND placeholder with portal URL
+    if (r.document_url && r.document_url.startsWith('NOT_FOUND')) {
+      r.document_url = r.portal_url || null;
+    }
+    // Ensure portal_url is always present
+    if (!r.portal_url && r.document_url && r.document_url.startsWith('http')) {
+      r.portal_url = r.document_url;
+    }
+  }
+  return results;
+}
+
 function applyExclusionCriteria(results, logger) {
   const excluded = [];
+
+  // Signal-only statuses: never remove, they are intelligence not active RFPs
+  const SIGNAL_STATUSES = new Set(['Watch', 'Award', 'Cancelled']);
+
   const kept = results.filter(r => {
+    // Exclude expired opportunities (due date has passed)
+    if (typeof r.days_remaining === 'number' && r.days_remaining < 0) {
+      excluded.push(`EXPIRED: ${r.state} — ${r.opportunity_title.slice(0, 50)} (due ${r.due_date})`);
+      return false;
+    }
+    // Also catch urgency=EXPIRED for string-parsed dates
+    if (r.urgency === 'EXPIRED') {
+      excluded.push(`EXPIRED: ${r.state} — ${r.opportunity_title.slice(0, 50)} (due ${r.due_date})`);
+      return false;
+    }
+
     // Exclude < $500K (unless est_value_m is 0 = unknown)
     if (r.est_value_m > 0 && r.est_value_m < 0.5) {
       excluded.push(`${r.state} — ${r.opportunity_title.slice(0, 50)} (value < $500K)`);
@@ -141,11 +173,28 @@ function applyExclusionCriteria(results, logger) {
       return false;
     }
 
+    // For non-signal statuses from scraped portals (not SAM.gov/USASpending which are pre-filtered):
+    // Require at least one procurement keyword in the title to avoid pulling in program pages, nav links, etc.
+    if (!SIGNAL_STATUSES.has(r.status) &&
+        r.source !== 'SAM.gov' &&
+        r.source !== 'USASpending.gov' &&
+        r.source !== 'BidNet Direct' &&
+        !r.source?.includes('APD') &&
+        !r.source?.includes('OIG') &&
+        !r.source?.includes('HMA')) {
+      const hasSignal = /\b(RFP|RFI|ITN|IFB|RFQ|RFQQ|solicitation|bid\b|procurement\s+notice|contract\s+opportunit|IDIQ)\b/i.test(r.opportunity_title);
+      if (!hasSignal) {
+        excluded.push(`${r.state} — ${r.opportunity_title.slice(0, 50)} (no procurement signal in title)`);
+        return false;
+      }
+    }
+
     return true;
   });
 
   if (excluded.length > 0) {
-    logger(`Excluded ${excluded.length} opportunities per Section 6.3 criteria`);
+    logger(`Excluded ${excluded.length} results per Section 6.3 criteria`);
+    excluded.forEach(e => logger(`  - ${e}`));
   }
 
   return kept;

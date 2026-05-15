@@ -43,7 +43,9 @@ const STATE_REGIONS = {
   MN:'Midwest', IA:'Midwest', MO:'Midwest', ND:'Midwest', SD:'Midwest',
   NE:'Midwest', KS:'Midwest',
   MT:'West', WY:'West', CO:'West', NM:'West', AZ:'West', UT:'West',
-  ID:'West', NV:'West', CA:'West', OR:'West', WA:'West', AK:'West', HI:'West'
+  ID:'West', NV:'West', CA:'West', OR:'West', WA:'West', AK:'West', HI:'West',
+  // Territories
+  PR:'Territory', GU:'Territory', VI:'Territory', AS:'Territory', MP:'Territory'
 };
 
 function getRegion(stateCode) {
@@ -59,7 +61,9 @@ const STATE_FMAP = {
   CA:50.00, IL:50.00, WI:59.37, OH:62.57, PA:54.55, MI:65.38, MN:50.00,
   NV:58.67, HI:56.72, OR:63.79, WA:50.00, ME:64.87, VT:55.50, RI:52.75,
   NH:50.00, DE:55.23, ND:50.00, NE:55.00, KS:57.35, IN:66.72, AK:50.00,
-  UT:70.00
+  UT:70.00,
+  // Territories (enhanced FMAP — 55% floor for Medicaid)
+  PR:83.00, GU:83.00, VI:83.00, AS:83.00, MP:83.00
 };
 
 function getFMAP(stateCode) {
@@ -143,11 +147,11 @@ function calcUrgency(dueDateStr) {
   const due = new Date(dueDateStr);
   if (isNaN(due.getTime())) return 'WATCH';
   const days = Math.ceil((due - new Date()) / 86400000);
+  if (days < 0)    return 'EXPIRED';
   if (days <= 14)  return 'CRITICAL';
   if (days <= 30)  return 'HIGH';
   if (days <= 90)  return 'MEDIUM';
-  if (days > 90)   return 'LOW';
-  return 'WATCH';
+  return 'LOW';
 }
 
 function calcDaysRemaining(dueDateStr) {
