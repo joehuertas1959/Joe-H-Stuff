@@ -2,26 +2,37 @@
 
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { fetchWithBrowser } = require('./browser');
 const { classifyOpportunity, calcUrgency, calcDaysRemaining, calcWinProbability, getHR1Score, getRegion, getFMAP, makeId } = require('./reference-data');
 
 const PORTAL_URL = 'https://www.tn.gov/tenncare/providers/resources/upcoming-procurements.html';
 // Known-good anchor from PROMPTJH v4.0, Section 3.8
 const KNOWN_ANCHOR = 'RFP 31865-00661 IT Audit Management Services';
 
+async function fetchHtml(url, logger) {
+  const axiosResp = await axios.get(url, {
+    timeout: 20000,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; HHS-Procurement-Scanner/4.0)',
+      'Accept': 'text/html,application/xhtml+xml'
+    }
+  });
+  let html = axiosResp.data;
+  const $test = cheerio.load(html);
+  const bodyText = $test('body').text().replace(/\s+/g, ' ').trim();
+  if (bodyText.length < 500 || !/(RFP|RFI|solicitation|procurement|upcoming|vendor)/i.test(bodyText)) {
+    logger(`${url}: static HTML appears empty — retrying with browser rendering …`);
+    html = await fetchWithBrowser(url, { logger });
+  }
+  return cheerio.load(html);
+}
+
 async function scrape({ logger = console.log } = {}) {
   logger('TennCare: fetching upcoming procurements …');
   const results = [];
 
   try {
-    const resp = await axios.get(PORTAL_URL, {
-      timeout: 20000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; HHS-Procurement-Scanner/4.0)',
-        'Accept': 'text/html,application/xhtml+xml'
-      }
-    });
-
-    const $ = cheerio.load(resp.data);
+    const $ = await fetchHtml(PORTAL_URL, logger);
 
     // TennCare lists solicitations in a table or list of links
     const entries = [];
