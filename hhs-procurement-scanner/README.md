@@ -1,8 +1,8 @@
 # HHS Procurement Intelligence Scanner
 
-**PROMPTJH-SCAN v4.0** | Effective: 2026-04-01
+**PROMPTJH-SCAN v4.1** | Effective: 2026-05-15
 
-A full-stack web application that scans live procurement sources to identify HHS-related IT procurement opportunities across all 50 states, using the PROMPTJH v4.0 specification.
+A full-stack web application that scans live procurement sources to identify HHS-related IT procurement opportunities across all 50 states + U.S. territories, using the PROMPTJH v4.0 specification.
 
 ---
 
@@ -17,29 +17,40 @@ npm start
 
 ## Features
 
-- **Live scraping** of 8 procurement sources across 4 tier cadences
+- **Live scraping** of procurement sources across 4 tier cadences covering all 50 states + PR, GU, VI
 - **24-column schema** per PROMPTJH v4.0 (all required fields)
 - **Excel export** — 6-sheet workbook: Full_Scan_Findings, Pipeline_Summary, State_Priority_Matrix, Vendor_Matrix, Confirmed_Unchanged_Log, Prompt_Improvement_Flags
 - **Markdown export** — Daily Roundup format per Section 5.5
 - **H.R. 1 readiness scores** for top-20 priority states
 - **Auto-classification** of opportunities into 30+ category flags (MES, COOP, ERM, AUDIT, MCO, MMIS, etc.)
 - **Win Probability** auto-calculated from state readiness, incumbent context, and opportunity scope
-- **Urgency classification** per PROMPTJH v4.0 Section 6.2
-- **Exclusion filter** per Section 6.3 (removes sub-$500K, non-HHS-program, financial-only entries)
+- **Urgency classification** — EXPIRED / CRITICAL / HIGH / MEDIUM / LOW / WATCH
+- **Exclusion filter** per Section 6.3: removes sub-$500K, expired, non-HHS-program, financial-only entries, and false positives (non-procurement page content)
+- **URL normalization** — broken document links fall back to the portal URL automatically
 - **H.R. 1 CE deadline countdown** (Jan. 1, 2027)
 
 ## Sources Scanned
 
-| Tier | Cadence | Source |
-|------|---------|--------|
-| 1 | Daily | TennCare Upcoming Procurements |
-| 1 | Daily | Virginia DMAS Procurement |
-| 1 | Daily | Oklahoma OHCA Procurement |
-| 2 | Weekly | Iowa DAS BidOpportunities (DataTables) |
-| 2 | Weekly | CMS APD Database (MACPro) |
-| 3 | Weekly | SAM.gov API (6 keyword sets) |
-| 3 | Weekly | USASpending.gov API (HHS/CMS contracts) |
-| 4 | Monthly | HHS OIG Work Plan |
+| Tier | Cadence | Source | Coverage |
+|------|---------|--------|----------|
+| 1 | Daily | TennCare Upcoming Procurements | TN |
+| 1 | Daily | Virginia DMAS Procurement | VA |
+| 1 | Daily | Oklahoma OHCA Procurement | OK |
+| 1 | Daily | Nevada NEVADAePro | NV |
+| 1 | Daily | Nebraska DHHS | NE |
+| 1 | Daily | Hawaii Med-QUEST | HI |
+| 1 | Daily | Illinois HFS | IL |
+| 2 | Weekly | Iowa DAS BidOpportunities (DataTables) | IA |
+| 2 | Weekly | CMS APD Database (MACPro) | Federal |
+| 2 | Weekly | State Health Portals (direct scrape) | 43 states + PR, GU, VI |
+| 2 | Weekly | HMA Weekly Roundup (signal intelligence) | All states |
+| 2 | Weekly | BidNet Direct (public RFP catalog) | All states |
+| 3 | Weekly | SAM.gov API (6 keyword sets) | Federal + all states |
+| 3 | Weekly | USASpending.gov API (HHS/CMS contracts) | Federal + all states |
+| 4 | Monthly | HHS OIG Work Plan (signal intelligence) | Federal |
+
+> **GovWin IQ (Deltek):** Requires a paid subscription — not included in automated scanning.
+> Contact Deltek to license GovWin data feeds. Manual GovWin searches should supplement this tool.
 
 ## SAM.gov API Key
 

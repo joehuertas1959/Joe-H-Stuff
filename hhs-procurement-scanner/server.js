@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config(); // loads .env into process.env (safe no-op if file absent)
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -120,16 +122,26 @@ app.post('/api/scan', async (req, res) => {
     return res.status(409).json({ error: 'Scan already in progress' });
   }
 
-  const { tier = 'all', sam_api_key } = req.body;
+  const { tier = 'all', sam_api_key, govwin_username, govwin_password, govwin_api_key, bidnet_username, bidnet_password } = req.body;
   scanInProgress = true;
   scanLog = [];
-  logScan(`Starting ${tier === 'all' ? 'full' : `Tier ${tier}`} scan — PROMPTJH-SCAN v4.0`);
+  logScan(`Starting ${tier === 'all' ? 'full' : `Tier ${tier}`} scan — PROMPTJH-SCAN v4.1`);
+
+  // Credentials: UI input takes precedence over .env values
+  const credentials = {
+    sam_api_key:      sam_api_key      || process.env.SAM_API_KEY      || 'DEMO_KEY',
+    govwin_username:  govwin_username  || process.env.GOVWIN_USERNAME   || null,
+    govwin_password:  govwin_password  || process.env.GOVWIN_PASSWORD   || null,
+    govwin_api_key:   govwin_api_key   || process.env.GOVWIN_API_KEY    || null,
+    bidnet_username:  bidnet_username  || process.env.BIDNET_USERNAME   || null,
+    bidnet_password:  bidnet_password  || process.env.BIDNET_PASSWORD   || null
+  };
 
   // Respond immediately; scan runs async
   res.json({ started: true, tier });
 
   try {
-    const results = await runScan({ tier, sam_api_key, logger: logScan });
+    const results = await runScan({ tier, ...credentials, logger: logScan });
     const state = store.getState();
     const existing = state.opportunities || [];
 
