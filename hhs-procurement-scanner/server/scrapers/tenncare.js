@@ -5,9 +5,7 @@ const cheerio = require('cheerio');
 const { fetchWithBrowser } = require('./browser');
 const { classifyOpportunity, calcUrgency, calcDaysRemaining, calcWinProbability, getHR1Score, getRegion, getFMAP, makeId } = require('./reference-data');
 
-const PORTAL_URL = 'https://www.tn.gov/tenncare/providers/resources/upcoming-procurements.html';
-// Known-good anchor from PROMPTJH v4.0, Section 3.8
-const KNOWN_ANCHOR = 'RFP 31865-00661 IT Audit Management Services';
+const PORTAL_URL = 'https://www.tn.gov/tenncare/information-statistics/upcoming-procurements.html';
 
 async function fetchHtml(url, logger) {
   const axiosResp = await axios.get(url, {
@@ -68,12 +66,6 @@ async function scrape({ logger = console.log } = {}) {
     }
 
     logger(`TennCare: found ${entries.length} procurement entries`);
-
-    // Always check known anchor even if not in live data
-    const hasKnownAnchor = entries.some(e => e.title.includes('31865') || e.title.toLowerCase().includes('it audit'));
-    if (!hasKnownAnchor) {
-      logger(`TennCare: known anchor "${KNOWN_ANCHOR}" not found — may be awarded or removed`);
-    }
 
     for (const entry of entries.slice(0, 20)) {
       const { category, program, itType } = classifyOpportunity(entry.title, '');

@@ -5,7 +5,7 @@ const cheerio = require('cheerio');
 const { fetchWithBrowser } = require('./browser');
 const { classifyOpportunity, calcUrgency, calcDaysRemaining, calcWinProbability, getHR1Score, getFMAP, makeId } = require('./reference-data');
 
-const PORTAL_URL = 'https://oklahoma.gov/ohca/resources/procurement.html';
+const PORTAL_URL = 'https://www.okhca.org/procurement';
 
 async function fetchHtml(url, logger) {
   const axiosResp = await axios.get(url, {

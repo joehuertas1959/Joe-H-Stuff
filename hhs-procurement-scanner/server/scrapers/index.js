@@ -5,6 +5,7 @@ const usaSpending       = require('./usaspending');
 const oigWorkplan       = require('./oig-workplan');
 const cmsApd            = require('./cms-apd');
 const tenncare          = require('./tenncare');
+const tnGeneralServices = require('./tn-generalservices');
 const virginia          = require('./virginia');
 const oklahoma          = require('./oklahoma');
 const iowa              = require('./iowa');
@@ -14,31 +15,77 @@ const hawaii            = require('./hawaii');
 const illinois          = require('./illinois');
 const stateHealthPortals = require('./state-health-portals');
 const hmaRoundup        = require('./hma-roundup');
-
-// ── Source-to-tier mapping ───────────────────────────────────────────────────
-// Tier 1 — Daily:   TennCare, VA DMAS, OK OHCA, Nevada, Nebraska, Hawaii, Illinois
-// Tier 2 — Weekly:  Iowa DAS, CMS APD, State Health Portals (12 states), HMA Roundup
-// Tier 3 — Weekly:  SAM.gov, USASpending.gov
-// Tier 4 — Monthly: HHS OIG Work Plan
+// New v5.5 portals
+const txHhsc            = require('./tx-hhsc');
+const ncDhhs            = require('./nc-dhhs');
+const flAhca            = require('./fl-ahca');
+const caDhcs            = require('./ca-dhcs');
+const nyDoh             = require('./ny-doh');
+const azAhcccs          = require('./az-ahcccs');
+const waHca             = require('./wa-hca');
+const ohMedicaid        = require('./oh-medicaid');
+const mnDhs             = require('./mn-dhs');
+const coHcpf            = require('./co-hcpf');
+const paDhs             = require('./pa-dhs');
+const scDhhs            = require('./sc-dhhs');
+const wiDhs             = require('./wi-dhs');
+const moDss             = require('./mo-dss');
+const kyDms             = require('./ky-dms');
+const miDhhs            = require('./mi-dhhs');
+const inFssa            = require('./in-fssa');
+const mdMmcp            = require('./md-mmcp');
+const maMasshealth      = require('./ma-masshealth');
+const njDmahs           = require('./nj-dmahs');
+const laLdh             = require('./la-ldh');
+const ctDss             = require('./ct-dss');
+const nhDhhs            = require('./nh-dhhs');
+const orOha             = require('./or-oha');
+const gaDch             = require('./ga-dch');
 
 const SOURCES = {
   tier1: [
-    { name: 'TennCare',           fn: tenncare.scrape          },
-    { name: 'Virginia DMAS',      fn: virginia.scrape          },
-    { name: 'Oklahoma OHCA',      fn: oklahoma.scrape          },
-    { name: 'Nevada NEVADAePro',  fn: nevada.scrape            },
-    { name: 'Nebraska DHHS',      fn: nebraska.scrape          },
-    { name: 'Hawaii Med-QUEST',   fn: hawaii.scrape            },
-    { name: 'Illinois HFS',       fn: illinois.scrape          }
+    { name: 'TennCare',                fn: tenncare.scrape },
+    { name: 'TN General Services',     fn: tnGeneralServices.scrape },
+    { name: 'Virginia DMAS',           fn: virginia.scrape },
+    { name: 'Oklahoma OHCA',           fn: oklahoma.scrape },
+    { name: 'Nevada NEVADAePro',       fn: nevada.scrape },
+    { name: 'Nebraska DHHS',           fn: nebraska.scrape },
+    { name: 'Hawaii Med-QUEST',        fn: hawaii.scrape },
+    { name: 'Illinois HFS',            fn: illinois.scrape },
+    { name: 'Texas HHSC',             fn: txHhsc.scrape },
+    { name: 'NC DHHS',                fn: ncDhhs.scrape },
+    { name: 'Florida AHCA',           fn: flAhca.scrape },
+    { name: 'California DHCS',        fn: caDhcs.scrape },
+    { name: 'New York DOH',           fn: nyDoh.scrape },
+    { name: 'Arizona AHCCCS',         fn: azAhcccs.scrape },
+    { name: 'Washington HCA',         fn: waHca.scrape },
+    { name: 'Ohio Medicaid',          fn: ohMedicaid.scrape },
+    { name: 'Minnesota DHS',          fn: mnDhs.scrape },
+    { name: 'Colorado HCPF',          fn: coHcpf.scrape },
+    { name: 'Pennsylvania DHS',       fn: paDhs.scrape },
+    { name: 'South Carolina DHHS',    fn: scDhhs.scrape },
+    { name: 'Wisconsin DHS',          fn: wiDhs.scrape },
+    { name: 'Missouri DSS',           fn: moDss.scrape },
+    { name: 'Kentucky CHFS',          fn: kyDms.scrape },
+    { name: 'Michigan DHHS',          fn: miDhhs.scrape },
+    { name: 'Indiana FSSA',           fn: inFssa.scrape },
+    { name: 'Maryland DHMH',          fn: mdMmcp.scrape },
+    { name: 'Massachusetts MassHealth', fn: maMasshealth.scrape },
+    { name: 'New Jersey DMAHS',       fn: njDmahs.scrape },
+    { name: 'Louisiana LDH',          fn: laLdh.scrape },
+    { name: 'Connecticut DSS',        fn: ctDss.scrape },
+    { name: 'New Hampshire DHHS',     fn: nhDhhs.scrape },
+    { name: 'Oregon OHA',             fn: orOha.scrape },
+    { name: 'Georgia DCH',            fn: gaDch.scrape },
   ],
   tier2: [
-    { name: 'Iowa DAS',               fn: iowa.scrape              },
-    { name: 'CMS APD',                fn: cmsApd.scrape            },
-    { name: 'State Health Portals',   fn: stateHealthPortals.scrape },
-    { name: 'HMA Weekly Roundup',     fn: hmaRoundup.scrape        }
+    { name: 'Iowa DAS',              fn: iowa.scrape },
+    { name: 'CMS APD',               fn: cmsApd.scrape },
+    { name: 'State Health Portals',  fn: stateHealthPortals.scrape },
+    { name: 'HMA Weekly Roundup',    fn: hmaRoundup.scrape }
   ],
   tier3: [
-    { name: 'SAM.gov',        fn: samGov.scrape      },
+    { name: 'SAM.gov',        fn: samGov.scrape },
     { name: 'USASpending',    fn: usaSpending.scrape }
   ],
   tier4: [
@@ -113,7 +160,7 @@ async function runScan({ tier = 'all', sam_api_key, logger = console.log } = {})
     }
   }
 
-  // Apply exclusion criteria (PROMPTJH v4.0, Section 6.3)
+  // Apply exclusion criteria (PROMPTJH v5.5, Section 6.3)
   const filtered = applyExclusionCriteria(allResults, logger);
   logger(`\nTotal after exclusion filter: ${filtered.length} / ${allResults.length}`);
 
@@ -122,6 +169,23 @@ async function runScan({ tier = 'all', sam_api_key, logger = console.log } = {})
 
 function applyExclusionCriteria(results, logger) {
   const excluded = [];
+
+  // Non-IT Medicaid exclusions (v5.5 expanded list)
+  const NON_IT_EXCLUDE = [
+    'managed care organization', 'mco contract', 'provider rate',
+    'pharmacy benefit', 'drug rebate', 'beneficiary advisory',
+    'advisory committee', 'public notice', 'public meeting',
+    'waiver amendment', 'state plan amendment', 'annual report',
+    'provider manual', 'member handbook', 'applying for medicaid',
+    'news release', 'press release', 'request for applications',
+    'notice of funding', 'grant funding', 'cooperative agreement',
+    'elevator maintenance', 'janitorial', 'grounds maintenance',
+    'food service', 'linen service',
+    'medical physicist', 'physician services', 'nursing services',
+    'dental services', 'clinical staffing', 'locum tenens',
+    'tractor tire', 'dry ice', 'waste tire',
+  ];
+
   const kept = results.filter(r => {
     // Exclude < $500K (unless est_value_m is 0 = unknown)
     if (r.est_value_m > 0 && r.est_value_m < 0.5) {
@@ -138,6 +202,13 @@ function applyExclusionCriteria(results, logger) {
     // Exclude general IT infrastructure with no HHS program component
     if (/network\s*upgrade|office\s*IT|desktop|printer|copier|telephone\s*system/i.test(r.opportunity_title)) {
       excluded.push(`${r.state} — ${r.opportunity_title.slice(0, 50)} (general IT infra, no HHS program component)`);
+      return false;
+    }
+
+    // Non-IT Medicaid exclusions (v5.5)
+    const titleLower = r.opportunity_title.toLowerCase();
+    if (NON_IT_EXCLUDE.some(e => titleLower.includes(e))) {
+      excluded.push(`${r.state} — ${r.opportunity_title.slice(0, 50)} (non-IT exclusion)`);
       return false;
     }
 
