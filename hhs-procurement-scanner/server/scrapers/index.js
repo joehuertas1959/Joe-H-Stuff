@@ -48,6 +48,9 @@ const wvDhhr            = require('./wv-dhhr');
 const mtDphhs           = require('./mt-dphhs');
 const riEohhs           = require('./ri-eohhs');
 const arDhs             = require('./ar-dhs');
+// Aggregators / intel platforms
+const bidnet            = require('./bidnet');
+const govwin            = require('./govwin');
 
 const SOURCES = {
   tier1: [
@@ -95,7 +98,9 @@ const SOURCES = {
     { name: 'Iowa DAS',              fn: iowa.scrape },
     { name: 'CMS APD',               fn: cmsApd.scrape },
     { name: 'State Health Portals',  fn: stateHealthPortals.scrape },
-    { name: 'HMA Weekly Roundup',    fn: hmaRoundup.scrape }
+    { name: 'HMA Weekly Roundup',    fn: hmaRoundup.scrape },
+    { name: 'BidNet Direct',         fn: bidnet.scrape },
+    { name: 'GovWin IQ',             fn: govwin.scrape }
   ],
   tier3: [
     { name: 'SAM.gov',        fn: samGov.scrape },

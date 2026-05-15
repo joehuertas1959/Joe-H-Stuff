@@ -2,6 +2,7 @@
 
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { fetchWithBrowser } = require('./browser');
 const { classifyOpportunity, calcUrgency, calcDaysRemaining, calcWinProbability, getHR1Score, getRegion, getFMAP, makeId } = require('./reference-data');
 
 // NEVADAePro public purchase listing — Tier B per PROMPTJH v4.0 Section 3.8
@@ -70,7 +71,36 @@ async function scrape({ logger = console.log } = {}) {
     }
 
     if (entries.length === 0) {
-      logger('Nevada NEVADAePro: 0 results — page may require JS rendering; check portal manually');
+      logger('Nevada NEVADAePro: 0 from static HTML — retrying with browser rendering …');
+      try {
+        const html = await fetchWithBrowser(PORTAL_URL, { logger });
+        const $b = cheerio.load(html);
+        $b('table tr').each((i, row) => {
+          if (i === 0) return;
+          const cells = $b(row).find('td');
+          if (cells.length < 2) return;
+          const link = $b(row).find('a').first();
+          const href = link.attr('href') || '';
+          const title = link.text().trim() || $b(cells.eq(1)).text().trim();
+          const rowText = $b(row).text().trim();
+          if (title.length < 8 || !KEYWORDS.test(rowText)) return;
+          const rfpNum = extractRFP(rowText) || extractBidId(href);
+          const dueDate = parseDate(rowText);
+          entries.push({ title, rfpNum, href: buildDocUrl(href), dueDate, context: rowText.slice(0, 300) });
+        });
+        if (entries.length === 0) {
+          $b('a[href*="bidDetail"]').each((i, el) => {
+            const text = $b(el).text().trim();
+            const href = $b(el).attr('href') || '';
+            const context = $b(el).closest('tr, li, div').text().trim();
+            if (text.length < 8 || !KEYWORDS.test(text + context)) return;
+            entries.push({ title: text, rfpNum: extractBidId(href), href: buildDocUrl(href), dueDate: parseDate(context), context: context.slice(0, 300) });
+          });
+        }
+      } catch (bErr) {
+        logger(`Nevada NEVADAePro browser fallback failed: ${bErr.message}`);
+      }
+      if (entries.length === 0) logger('Nevada NEVADAePro: 0 results after browser fallback — check portal manually');
     }
 
     logger(`Nevada NEVADAePro: found ${entries.length} relevant entries`);
