@@ -50,7 +50,7 @@ const SOURCES = {
   ]
 };
 
-async function runScan({ tier = 'all', sam_api_key, govwin_username, govwin_password, govwin_api_key, logger = console.log } = {}) {
+async function runScan({ tier = 'all', sam_api_key, govwin_username, govwin_password, govwin_api_key, bidnet_username, bidnet_password, logger = console.log } = {}) {
   const allResults = [];
   const seenIds = new Set();
 
@@ -76,9 +76,10 @@ async function runScan({ tier = 'all', sam_api_key, govwin_username, govwin_pass
     }
   };
 
-  const opts = { logger, api_key: sam_api_key || 'DEMO_KEY' };
-  const samOpts = { logger, api_key: sam_api_key || 'DEMO_KEY' };
+  const opts       = { logger, api_key: sam_api_key || 'DEMO_KEY' };
+  const samOpts    = { logger, api_key: sam_api_key || 'DEMO_KEY' };
   const govwinOpts = { logger, username: govwin_username, password: govwin_password, api_key: govwin_api_key };
+  const bidnetOpts = { logger, username: bidnet_username, password: bidnet_password };
 
   const tiersToRun = tier === 'all'
     ? ['tier1', 'tier2', 'tier3', 'tier4']
@@ -102,6 +103,8 @@ async function runScan({ tier = 'all', sam_api_key, govwin_username, govwin_pass
             continue;
           }
           await runSource(source, govwinOpts);
+        } else if (source.name === 'BidNet Direct') {
+          await runSource(source, bidnetOpts);
         } else {
           await runSource(source, opts);
         }
