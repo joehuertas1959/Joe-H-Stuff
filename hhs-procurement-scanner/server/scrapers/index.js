@@ -15,6 +15,7 @@ const illinois          = require('./illinois');
 const stateHealthPortals = require('./state-health-portals');
 const hmaRoundup        = require('./hma-roundup');
 const bidnet            = require('./bidnet');
+const govwin            = require('./govwin');
 
 // ── Source-to-tier mapping ───────────────────────────────────────────────────
 // Tier 1 — Daily:   TennCare, VA DMAS, OK OHCA, Nevada, Nebraska, Hawaii, Illinois
@@ -37,7 +38,8 @@ const SOURCES = {
     { name: 'CMS APD',                fn: cmsApd.scrape            },
     { name: 'State Health Portals',   fn: stateHealthPortals.scrape },
     { name: 'HMA Weekly Roundup',     fn: hmaRoundup.scrape        },
-    { name: 'BidNet Direct',          fn: bidnet.scrape            }
+    { name: 'BidNet Direct',          fn: bidnet.scrape            },
+    { name: 'GovWin IQ',              fn: govwin.scrape            }
   ],
   tier3: [
     { name: 'SAM.gov',        fn: samGov.scrape      },
@@ -48,7 +50,7 @@ const SOURCES = {
   ]
 };
 
-async function runScan({ tier = 'all', sam_api_key, logger = console.log } = {}) {
+async function runScan({ tier = 'all', sam_api_key, govwin_username, govwin_password, govwin_api_key, logger = console.log } = {}) {
   const allResults = [];
   const seenIds = new Set();
 
@@ -76,6 +78,7 @@ async function runScan({ tier = 'all', sam_api_key, logger = console.log } = {})
 
   const opts = { logger, api_key: sam_api_key || 'DEMO_KEY' };
   const samOpts = { logger, api_key: sam_api_key || 'DEMO_KEY' };
+  const govwinOpts = { logger, username: govwin_username, password: govwin_password, api_key: govwin_api_key };
 
   const tiersToRun = tier === 'all'
     ? ['tier1', 'tier2', 'tier3', 'tier4']
@@ -92,7 +95,16 @@ async function runScan({ tier = 'all', sam_api_key, logger = console.log } = {})
     // Run Tier 1/2 state portals sequentially to be polite
     if (t === 'tier1' || t === 'tier2') {
       for (const source of sources) {
-        await runSource(source, opts);
+        // GovWin gets its own credentials object; skip if no credentials provided
+        if (source.name === 'GovWin IQ') {
+          if (!govwinOpts.username && !govwinOpts.api_key) {
+            logger('GovWin IQ: no credentials configured — skipping. Add GOVWIN_USERNAME/PASSWORD to .env or enter in UI.');
+            continue;
+          }
+          await runSource(source, govwinOpts);
+        } else {
+          await runSource(source, opts);
+        }
       }
     }
 
