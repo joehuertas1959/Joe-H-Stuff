@@ -6,7 +6,17 @@ const { fetchWithBrowser } = require('./browser');
 const { classifyOpportunity, calcUrgency, calcDaysRemaining, calcWinProbability,
         getHR1Score, getRegion, getFMAP, makeId, parseRFPNumber } = require('./reference-data');
 
-const NAV_SKIP = /^(home|about|contact|login|search|menu|back|next|previous|skip|print|share|facebook|twitter|linkedin|accessibility|sitemap|help|top|footer|header|news|events|careers|privacy|terms|subscribe)$/i;
+// Single-word nav links to skip
+const NAV_SKIP = /^(home|about|contact|login|search|menu|back|next|previous|skip|print|share|facebook|twitter|linkedin|accessibility|sitemap|help|top|footer|header|news|events|careers|privacy|terms|subscribe|english|español)$/i;
+
+// Link TITLES that are clearly not procurement opportunities
+const BAD_TITLE = /^(what\s+is\b|apply\s+for\b|view\s+our\b|about\s+|how\s+to\b|contact\s+|click\s+here|learn\s+more|read\s+more|sign\s+in|log\s+in|more\s+info|visit\s+|go\s+to\s+|see\s+all|check\s+out|get\s+|find\s+a\b|find\s+your|translate\b|español|accessibility\b|skip\s+to|back\s+to\b)/i;
+
+// Person name / staff listing patterns — not a procurement title
+const STAFF_TITLE = /\b(director|secretary|administrator|commissioner|officer|chief|supervisor|coordinator|manager|deputy|associate\s+commissioner|state\s+medicaid\s+director)\b/i;
+
+// Must appear in the link text OR its immediate context for Strategy 2
+const PROCUREMENT_SIGNAL = /\b(RFP|RFI|ITN|IFB|RFQ|RFQQ|solicitation|request\s+for\s+proposal|request\s+for\s+information|request\s+for\s+quotation|bid\s+opportunit|procurement\s+opportunit|upcoming\s+procurement|vendor\s+opportunit|contract\s+opportunit|notice\s+of\s+intent|sources?\s+sought|pre-solicitation|pre\s+solicitation|award\s+notice)\b/i;
 
 async function fetchHtml(url, logger) {
   try {
@@ -35,19 +45,30 @@ async function fetchHtml(url, logger) {
 
 function parseDate(text) {
   const MONTHS = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
-  // MM/DD/YYYY or MM-DD-YYYY
   let m = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
   if (m) {
     const y = m[3].length === 2 ? `20${m[3]}` : m[3];
     return `${y}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
   }
-  // "March 15, 2026" or "15 March 2026"
   m = text.match(/([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})/);
   if (m) {
     const mo = MONTHS[m[1].toLowerCase()];
     if (mo) return `${m[3]}-${String(mo).padStart(2,'0')}-${m[2].padStart(2,'0')}`;
   }
   return null;
+}
+
+function isBadTitle(text) {
+  if (text.length < 8 || text.length > 200) return true;
+  if (NAV_SKIP.test(text)) return true;
+  if (BAD_TITLE.test(text)) return true;
+  // Person name with staff title but no procurement signal
+  if (STAFF_TITLE.test(text) && !PROCUREMENT_SIGNAL.test(text)) return true;
+  // Ends with "policy" or "statement" — footer links
+  if (/\b(policy|statement|notice|disclaimer|cookie|copyright)\s*$/.test(text)) return true;
+  // Pure question (no procurement context)
+  if (/\?$/.test(text) && !PROCUREMENT_SIGNAL.test(text)) return true;
+  return false;
 }
 
 async function scrapePortal(config, { logger = console.log } = {}) {
@@ -60,33 +81,40 @@ async function scrapePortal(config, { logger = console.log } = {}) {
     const entries = [];
     const seen = new Set();
 
-    const kwRegex = keywords || /RFP|RFI|IFB|solicitation|procurement|bid|contract|vendor|Medicaid|SNAP|TANF|health|eligibility|IT|system|MMIS|managed care|MCO/i;
+    const kwRegex = keywords || /RFP|RFI|IFB|solicitation|procurement|bid|contract|vendor|Medicaid|SNAP|TANF|eligibility|MMIS|managed care|MCO/i;
 
-    // Strategy 1: table rows
+    // Strategy 1: table rows — good structured data
     $('table tbody tr, table tr').each((i, row) => {
       const cells = $(row).find('td');
       if (cells.length < 2) return;
       const rowText = $(row).text().trim();
-      if (!kwRegex.test(rowText)) return;
+      if (rowText.length > 2000) return; // skip rows that contain entire page navigation
+      if (!kwRegex.test(rowText) && !PROCUREMENT_SIGNAL.test(rowText)) return;
       const link = $(row).find('a').first();
       const href = link.attr('href') || '';
-      const title = link.text().trim() || $(cells.eq(0)).text().trim() || $(cells.eq(1)).text().trim();
-      if (title.length < 8) return;
+      const title = (link.text().trim() || $(cells.eq(0)).text().trim() || $(cells.eq(1)).text().trim()).slice(0, 200);
+      if (isBadTitle(title)) return;
       const key = title.toLowerCase().slice(0, 60);
       if (seen.has(key)) return;
       seen.add(key);
       entries.push({ title, href, context: rowText.slice(0, 400) });
     });
 
-    // Strategy 2: list items / paragraphs with procurement links
+    // Strategy 2: anchor links — ONLY accept if procurement signal present
     if (entries.length === 0) {
       $('a[href]').each((i, el) => {
         const text = $(el).text().trim();
         const href = $(el).attr('href') || '';
-        if (text.length < 8) return;
-        if (NAV_SKIP.test(text)) return;
-        const context = $(el).closest('p, li, td, div').text().trim();
-        if (!kwRegex.test(text + context)) return;
+        if (isBadTitle(text)) return;
+
+        const context = $(el).closest('p, li, td, tr, section').text().trim().slice(0, 500);
+
+        // Require a procurement signal in the title OR the immediate context
+        if (!PROCUREMENT_SIGNAL.test(text) && !PROCUREMENT_SIGNAL.test(context)) return;
+
+        // Also require HHS-program relevance
+        if (!kwRegex.test(text + ' ' + context)) return;
+
         const key = text.toLowerCase().slice(0, 60);
         if (seen.has(key)) return;
         seen.add(key);
