@@ -12,6 +12,7 @@ import {
   deleteProposal,
 } from './store.js';
 import { ingest, removeDocumentFile } from './docparse.js';
+import { buildBidderResponseDocx } from './docxbuilder.js';
 import * as svc from './services.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -170,6 +171,23 @@ app.post('/api/proposals/:id/evaluation', h(async (req, res) => {
   if (!p) return res.status(404).json({ error: 'Not found' });
   const evaluation = await svc.evaluateProposal(p, keyFrom(req));
   res.json(await updateProposal(p.id, (p) => { p.evaluation = evaluation; }));
+}));
+
+// --- Export: Bidder's Response Form (.docx) --------------------------------
+app.get('/api/proposals/:id/export/docx', h(async (req, res) => {
+  const p = await getProposal(req.params.id);
+  if (!p) return res.status(404).json({ error: 'Not found' });
+  if (!p.template) {
+    return res.status(400).json({ error: 'Generate a response template (Step 2) before exporting.' });
+  }
+  const buf = await buildBidderResponseDocx(p);
+  const safe = (p.name || 'proposal').replace(/[^a-z0-9-_ ]/gi, '_').trim() || 'proposal';
+  res.setHeader(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  );
+  res.setHeader('Content-Disposition', `attachment; filename="${safe} - Bidder Response Form.docx"`);
+  res.send(buf);
 }));
 
 // --- Manual edits ----------------------------------------------------------
