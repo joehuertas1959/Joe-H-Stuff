@@ -27,6 +27,15 @@ Claude (`claude-opus-4-8` via the Anthropic API).
    evaluation criteria, as an evaluator on the issuing authority's team would,
    and recommends how to improve the score.
 
+### Word export
+
+From the **Draft & Gaps** tab, **⬇ Download Word form** produces a
+submission-ready **Bidder's Response Form** as a `.docx`: a cover/identification
+block, each section heading with the drafted response placed in, unfilled
+`[placeholders]` flagged in red, and a certification/signature block. Built
+deterministically from your drafted content (no API call), so it works
+regardless of API credit balance.
+
 ## Architecture
 
 ```
@@ -86,6 +95,7 @@ npm start               # server serves the API + the built client on :8787
 | `POST` | `/api/proposals/:id/checklist` | generate submission checklist |
 | `POST` | `/api/proposals/:id/gaps` | run gap analysis |
 | `POST` | `/api/proposals/:id/evaluation` | evaluate the draft |
+| `GET` | `/api/proposals/:id/export/docx` | download the Bidder's Response Form (.docx) |
 | `PATCH` | `/api/proposals/:id/section/:sectionId` | edit a section draft |
 | `PATCH` | `/api/proposals/:id/risk/:riskId` | set risk treatment |
 | `PATCH` | `/api/proposals/:id/tracker/:stepId` | update step status |

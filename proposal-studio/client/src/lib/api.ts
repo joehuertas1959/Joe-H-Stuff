@@ -65,6 +65,29 @@ export const api = {
       handle<Proposal>(r),
     ),
 
+  exportDocx: async (id: string, filename: string) => {
+    const res = await fetch(`/api/proposals/${id}/export/docx`, { headers: headers() });
+    if (!res.ok) {
+      let msg = `Export failed (${res.status})`;
+      try {
+        const body = await res.json();
+        if (body?.error) msg = body.error;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+
   patch: (id: string, path: string, body: unknown) =>
     fetch(`/api/proposals/${id}/${path}`, {
       method: 'PATCH',

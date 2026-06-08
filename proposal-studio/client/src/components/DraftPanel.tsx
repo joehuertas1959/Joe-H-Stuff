@@ -166,6 +166,14 @@ export function DraftPanel({ proposal, onUpdate, onError }: PanelProps) {
               onError={onError}
               onRun={async () => onUpdate(await api.generate(proposal.id, 'gaps'))}
             />
+            <GenerateButton
+              className=""
+              label="⬇ Download Word form"
+              onError={onError}
+              onRun={async () =>
+                api.exportDocx(proposal.id, `${proposal.name} - Bidder Response Form.docx`)
+              }
+            />
           </div>
         </div>
         <div className="row" style={{ marginTop: 10 }}>
