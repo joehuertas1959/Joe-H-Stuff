@@ -21,9 +21,11 @@ const ncDhhs            = require('./nc-dhhs');
 const flAhca            = require('./fl-ahca');
 const caDhcs            = require('./ca-dhcs');
 const nyDoh             = require('./ny-doh');
+const nyDohRfp          = require('./ny-doh-rfp');
 const azAhcccs          = require('./az-ahcccs');
 const waHca             = require('./wa-hca');
 const ohMedicaid        = require('./oh-medicaid');
+const ohMedicaidBuys    = require('./oh-medicaid-buys');
 const mnDhs             = require('./mn-dhs');
 const coHcpf            = require('./co-hcpf');
 const paDhs             = require('./pa-dhs');
@@ -48,6 +50,9 @@ const wvDhhr            = require('./wv-dhhr');
 const mtDphhs           = require('./mt-dphhs');
 const riEohhs           = require('./ri-eohhs');
 const arDhs             = require('./ar-dhs');
+// Aggregators / intel platforms
+const bidnet            = require('./bidnet');
+const govwin            = require('./govwin');
 
 const SOURCES = {
   tier1: [
@@ -64,9 +69,11 @@ const SOURCES = {
     { name: 'Florida AHCA',           fn: flAhca.scrape },
     { name: 'California DHCS',        fn: caDhcs.scrape },
     { name: 'New York DOH',           fn: nyDoh.scrape },
+    { name: 'New York DOH (RFA/RFP)', fn: nyDohRfp.scrape },
     { name: 'Arizona AHCCCS',         fn: azAhcccs.scrape },
     { name: 'Washington HCA',         fn: waHca.scrape },
     { name: 'Ohio Medicaid',          fn: ohMedicaid.scrape },
+    { name: 'Ohio ODM / Ohio Buys',   fn: ohMedicaidBuys.scrape },
     { name: 'Minnesota DHS',          fn: mnDhs.scrape },
     { name: 'Colorado HCPF',          fn: coHcpf.scrape },
     { name: 'Pennsylvania DHS',       fn: paDhs.scrape },
@@ -95,7 +102,9 @@ const SOURCES = {
     { name: 'Iowa DAS',              fn: iowa.scrape },
     { name: 'CMS APD',               fn: cmsApd.scrape },
     { name: 'State Health Portals',  fn: stateHealthPortals.scrape },
-    { name: 'HMA Weekly Roundup',    fn: hmaRoundup.scrape }
+    { name: 'HMA Weekly Roundup',    fn: hmaRoundup.scrape },
+    { name: 'BidNet Direct',         fn: bidnet.scrape },
+    { name: 'GovWin IQ',             fn: govwin.scrape }
   ],
   tier3: [
     { name: 'SAM.gov',        fn: samGov.scrape },

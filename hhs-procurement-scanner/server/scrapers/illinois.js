@@ -2,6 +2,7 @@
 
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { fetchWithBrowser } = require('./browser');
 const { classifyOpportunity, calcUrgency, calcDaysRemaining, calcWinProbability, getHR1Score, getFMAP, makeId } = require('./reference-data');
 
 const PORTAL_URL  = 'https://hfs.illinois.gov/info/procurement.html';
@@ -68,6 +69,34 @@ async function scrape({ logger = console.log } = {}) {
         entries.push({ title: text, rfpNum, href: fullHref, dueDate });
       });
       if (entries.length > 0) break;
+    }
+
+    if (entries.length === 0) {
+      logger('Illinois HFS: 0 from static HTML — retrying with browser rendering …');
+      try {
+        const html = await fetchWithBrowser(PORTAL_URL, { logger });
+        const $b = cheerio.load(html);
+        for (const sel of selectors) {
+          $b(sel).each((i, el) => {
+            const text = $b(el).text().trim();
+            const href = $b(el).attr('href') || '';
+            if (text.length < 8) return;
+            if (/^(home|about|contact|login|search|menu|top|back)$/i.test(text)) return;
+            const context = $b(el).closest('p, li, td, div').text().trim();
+            if (!KEYWORDS.test(text + context)) return;
+            const dedupKey = text.toLowerCase().slice(0, 60);
+            if (seen.has(dedupKey)) return;
+            seen.add(dedupKey);
+            const rfpNum = extractRFP(text + context);
+            const dueDate = parseDate(context) || parseDueLabel(context);
+            let fullHref = href.startsWith('http') ? href : href.startsWith('/') ? `${BASE_URL}${href}` : href ? `${BASE_URL}/${href}` : null;
+            entries.push({ title: text, rfpNum, href: fullHref, dueDate });
+          });
+          if (entries.length > 0) break;
+        }
+      } catch (bErr) {
+        logger(`Illinois HFS browser fallback failed: ${bErr.message}`);
+      }
     }
 
     logger(`Illinois HFS: found ${entries.length} procurement entries`);

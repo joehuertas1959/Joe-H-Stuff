@@ -6,7 +6,31 @@ const { fetchWithBrowser } = require('./browser');
 const { classifyOpportunity, calcUrgency, calcDaysRemaining, calcWinProbability,
         getHR1Score, getRegion, getFMAP, makeId, parseRFPNumber } = require('./reference-data');
 
-const NAV_SKIP = /^(home|about|contact|login|search|menu|back|next|previous|skip|print|share|facebook|twitter|linkedin|accessibility|sitemap|help|top|footer|header|news|events|careers|privacy|terms|subscribe)$/i;
+// Procurement signal — must appear in link text OR surrounding context for Strategy 2
+const PROCUREMENT_SIGNAL = /\b(RFP|RFI|ITN|IFB|RFQ|RFQQ|solicitation|request\s+for\s+proposal|request\s+for\s+information|invitation\s+for\s+bid|bid\s+opportunity|contract\s+opportunity|procurement|vendor\s+selection|source\s+selection|pre-solicitation|pre-bid|award\s+notice|notice\s+of\s+intent)\b/i;
+
+// Exact single-word nav items
+const NAV_SKIP = /^(home|about|contact|login|search|menu|back|next|previous|skip|print|share|facebook|twitter|linkedin|accessibility|sitemap|help|top|footer|header|news|events|careers|privacy|terms|subscribe|resources|forms|services|programs|apply|register|logout|signin|signup)$/i;
+
+// Multi-word UI / nav / footer patterns that are never procurement titles
+const BAD_TITLE = /^(skip\s+to|go\s+to\s+main|back\s+to\s+top|return\s+to|scroll\s+to|jump\s+to|change\s+site\s+language|select\s+language|language\s+(settings|options)|report\s+(a|an)\s+(accessibility|problem|issue|bug)|accessibility\s+statement|view\s+(all|more|our|full)|read\s+more|see\s+all|see\s+more|learn\s+more|click\s+here|find\s+out|sign\s+(in|up|out)|log\s+(in|out)|create\s+account|my\s+account|give\s+feedback|submit\s+feedback|contact\s+us|email\s+us|call\s+us|follow\s+us|share\s+this|print\s+this|get\s+adobe|download\s+adobe|department\s+of\s+human\s+services$|department\s+of\s+health$|department\s+of\s+health\s+and\s+human\s+services$|state\s+of\s+[a-z]+$|office\s+of\s+[a-z\s]+$|bureau\s+of\s+[a-z\s]+$)/i;
+
+// Phone number patterns masquerading as titles
+const PHONE_PATTERN = /^[\d\s\.\-\(\)]+$|^\d-\d{3}-[A-Z0-9]+$|^1-8[0-9]{2}-/i;
+
+// Staff bio / org chart entries
+const STAFF_TITLE = /\b(director|secretary|administrator|commissioner|deputy|assistant\s+secretary|chief\s+of\s+staff|executive\s+director|general\s+counsel)\b.*,/i;
+
+function isBadTitle(text) {
+  if (NAV_SKIP.test(text)) return true;
+  if (BAD_TITLE.test(text)) return true;
+  if (PHONE_PATTERN.test(text.trim())) return true;
+  if (STAFF_TITLE.test(text)) return true;
+  // Reject if text is mostly digits/punctuation (breadcrumbs, page numbers)
+  const alphaPct = (text.match(/[a-zA-Z]/g) || []).length / text.length;
+  if (alphaPct < 0.4 && text.length < 30) return true;
+  return false;
+}
 
 async function fetchHtml(url, logger) {
   try {
@@ -71,7 +95,8 @@ async function scrapePortal(config, { logger = console.log } = {}) {
       const link = $(row).find('a').first();
       const href = link.attr('href') || '';
       const title = link.text().trim() || $(cells.eq(0)).text().trim() || $(cells.eq(1)).text().trim();
-      if (title.length < 8) return;
+      if (title.length < 10) return;
+      if (isBadTitle(title)) return;
       const key = title.toLowerCase().slice(0, 60);
       if (seen.has(key)) return;
       seen.add(key);
@@ -79,14 +104,17 @@ async function scrapePortal(config, { logger = console.log } = {}) {
     });
 
     // Strategy 2: list items / paragraphs with procurement links
+    // Requires PROCUREMENT_SIGNAL in text or context to block nav/footer/UI links
     if (entries.length === 0) {
       $('a[href]').each((i, el) => {
         const text = $(el).text().trim();
         const href = $(el).attr('href') || '';
-        if (text.length < 8) return;
-        if (NAV_SKIP.test(text)) return;
+        if (text.length < 10) return;
+        if (isBadTitle(text)) return;
         const context = $(el).closest('p, li, td, div').text().trim();
-        if (!kwRegex.test(text + context)) return;
+        // Must have procurement signal AND keyword match
+        if (!PROCUREMENT_SIGNAL.test(text) && !PROCUREMENT_SIGNAL.test(context)) return;
+        if (!kwRegex.test(text + ' ' + context)) return;
         const key = text.toLowerCase().slice(0, 60);
         if (seen.has(key)) return;
         seen.add(key);

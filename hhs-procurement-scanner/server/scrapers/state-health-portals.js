@@ -2,6 +2,7 @@
 
 const axios   = require('axios');
 const cheerio = require('cheerio');
+const { fetchWithBrowser } = require('./browser');
 const {
   classifyOpportunity, calcUrgency, calcDaysRemaining,
   calcWinProbability, getHR1Score, getRegion, getFMAP, makeId
@@ -248,6 +249,34 @@ async function extractFromPortal(portal, logger) {
       entries.push({ title: text, rfpNum, href: fullHref, dueDate, context });
     });
     if (entries.length > 0) break; // stop at first selector that found results
+  }
+
+  // Browser fallback when static HTML yields nothing
+  if (entries.length === 0) {
+    logger(`State Portals [${portal.state}]: 0 from static — retrying with browser rendering …`);
+    try {
+      const html = await fetchWithBrowser(portal.url, { logger });
+      const $b = cheerio.load(html);
+      for (const sel of portal.contentSelectors) {
+        $b(sel).each((i, el) => {
+          const text = $b(el).text().trim();
+          const href = $b(el).attr('href') || '';
+          if (text.length < 8) return;
+          if (NAV_SKIP.test(text)) return;
+          const context = $b(el).closest('p, li, td, tr, div').text().trim().slice(0, 400);
+          if (!portal.keywords.test(text + context)) return;
+          const dedupKey = text.toLowerCase().slice(0, 60);
+          if (seenTitles.has(dedupKey)) return;
+          seenTitles.add(dedupKey);
+          const rfpNum = extractRFP(text + context);
+          const dueDate = parseDate(context) || parseDueLabel(context);
+          entries.push({ title: text, rfpNum, href: resolveUrl(href, portal.baseUrl), dueDate, context });
+        });
+        if (entries.length > 0) break;
+      }
+    } catch (bErr) {
+      logger(`State Portals [${portal.state}] browser fallback failed: ${bErr.message}`);
+    }
   }
 
   logger(`State Portals [${portal.state}]: ${entries.length} entries found`);
